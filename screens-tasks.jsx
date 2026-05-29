@@ -114,9 +114,10 @@ const TasksScreen = ({ state, actions }) => {
         }}>
           <Icon name="info" size={16} color="var(--teal)" />
           <div>
-            Invite friends to earn ⚡ instantly. Get <b style={{ color: "var(--teal)" }}>+1 ⚡</b> per invite sent,
-            {" "}<b style={{ color: "var(--orange)" }}>+3 ⚡</b> when they make their first prediction,
-            and <b style={{ color: "var(--gold)" }}>+5 ⚡</b> when they complete a Thrill task.
+            Each prediction costs <b style={{ color: "var(--orange)" }}>⚡1</b>. Refill by inviting friends:
+            {" "}<b style={{ color: "var(--teal)" }}>+1 ⚡</b> per invite sent,
+            {" "}<b style={{ color: "var(--orange)" }}>+3 ⚡</b> when they make their first pick,
+            {" "}<b style={{ color: "var(--gold)" }}>+5 ⚡</b> when they complete a Thrill task.
           </div>
         </div>
       </div>
@@ -353,4 +354,119 @@ const BigWheel = () => {
   );
 };
 
-Object.assign(window, { TasksScreen, CasinoScreen });
+// ─── OUT OF ENERGY MODAL ─────────────────────────────────
+const OutOfEnergyModal = ({ state, actions, onClose }) => {
+  const quickTasks = [
+    {
+      id: "invite",
+      icon: "people",
+      color: "#FF9F1C",
+      title: "Invite a friend",
+      sub: "+1 ⚡ now · +3 ⚡ on their first pick",
+      reward: "+1 ⚡",
+      action: () => { onClose(); actions.openInvite(); },
+    },
+    {
+      id: "spin",
+      icon: "wheel",
+      color: "#FFD60A",
+      title: "Spin the wheel",
+      sub: "Win up to ⚡50 — one free spin daily",
+      reward: "1–50 ⚡",
+      action: () => { onClose(); actions.openCasino(); },
+    },
+    {
+      id: "channel",
+      icon: "telegram",
+      color: "#22D3EE",
+      title: "Join our channel",
+      sub: "@thrill_arena · one-time reward",
+      reward: "+20 ⚡",
+      done: state.channelJoined,
+      action: () => { onClose(); actions.openChannelVerify(); },
+    },
+    {
+      id: "wallet",
+      icon: "wallet",
+      color: "#FFD60A",
+      title: "Connect TON wallet",
+      sub: "Required for USDT payout",
+      reward: "+50 ⚡",
+      done: !!state.wallet,
+      action: () => { onClose(); actions.openWalletConnect(); },
+    },
+  ];
+
+  return (
+    <div className="modal" onClick={onClose}>
+      <div className="modal-sheet" onClick={e => e.stopPropagation()} style={{ paddingBottom: 28 }}>
+        <div className="modal-handle" />
+
+        {/* Header */}
+        <div style={{ textAlign: "center", padding: "8px 0 22px" }}>
+          <div style={{
+            width: 64, height: 64, borderRadius: "50%", margin: "0 auto 16px",
+            background: "radial-gradient(circle, rgba(255,159,28,0.25), rgba(255,159,28,0.06))",
+            border: "1px solid rgba(255,159,28,0.3)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
+            <BoltIcon size={30} color="#FF9F1C" />
+          </div>
+          <div className="h-lg" style={{ marginBottom: 8 }}>Out of energy</div>
+          <div style={{ fontSize: 13, color: "var(--text-dim)", lineHeight: 1.5, maxWidth: 280, margin: "0 auto" }}>
+            Complete a quick task to earn ⚡ and keep predicting.
+          </div>
+        </div>
+
+        {/* Task list */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 20 }}>
+          {quickTasks.filter(t => !t.done).map(t => (
+            <button
+              key={t.id}
+              className="btn"
+              onClick={t.action}
+              style={{
+                width: "100%", textAlign: "left",
+                display: "flex", alignItems: "center", gap: 14,
+                padding: "14px 16px",
+                background: "var(--card)",
+                border: `1px solid ${t.color}33`,
+                borderRadius: 16,
+              }}
+            >
+              <div style={{
+                width: 44, height: 44, borderRadius: 12, flexShrink: 0,
+                background: `${t.color}1A`,
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}>
+                <Icon name={t.icon} size={22} color={t.color} />
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 2 }}>{t.title}</div>
+                <div style={{ fontSize: 12, color: "var(--text-faint)" }}>{t.sub}</div>
+              </div>
+              <div style={{
+                fontFamily: "var(--display)", fontSize: 17,
+                color: t.color, whiteSpace: "nowrap",
+                display: "flex", alignItems: "center", gap: 4,
+              }}>
+                {t.reward.replace(/⚡/g, "").trim()}
+                <BoltIcon size={13} color={t.color} />
+              </div>
+            </button>
+          ))}
+        </div>
+
+        <button className="btn" onClick={onClose} style={{
+          width: "100%", height: 44,
+          color: "var(--text-faint)", fontSize: 13, fontWeight: 600,
+          letterSpacing: "0.04em",
+        }}>
+          Maybe later
+        </button>
+      </div>
+    </div>
+  );
+};
+
+Object.assign(window, { TasksScreen, CasinoScreen, OutOfEnergyModal });

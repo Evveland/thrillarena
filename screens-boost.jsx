@@ -640,37 +640,35 @@ const BoostThisPickInline = ({ state, actions }) => {
 
 // ─── LOW-ENERGY DEPOSIT PROMPT — inline on Tasks ────────
 const LowEnergyDepositCard = ({ state, actions }) => {
-  if (state.energy > 15) return null;
-  const nextTier = BOOST_TIERS.find(t => t.mult > state.boost.tier.mult) || BOOST_TIERS[1];
+  if (state.energy > 3) return null;
   return (
     <div style={{ padding: "0 20px 12px" }}>
-      <button className="btn" onClick={() => actions.openDeposit(20)} style={{
+      <button className="btn" onClick={() => actions.openInvite()} style={{
         width: "100%", textAlign: "left", padding: 0,
         borderRadius: 18, overflow: "hidden",
         background: `
-          radial-gradient(120% 80% at 100% 0%, rgba(255,77,103,0.22), transparent 60%),
-          linear-gradient(135deg, #2A1A2A, #1A1626)`,
-        border: "1px solid rgba(255,77,103,0.35)",
-        position: "relative",
+          radial-gradient(120% 80% at 100% 0%, rgba(255,159,28,0.22), transparent 60%),
+          linear-gradient(135deg, #2A1F18, #1A1626)`,
+        border: "1px solid rgba(255,159,28,0.4)",
       }}>
         <div style={{ padding: "14px 18px", display: "flex", alignItems: "center", gap: 12 }}>
           <div style={{
             width: 44, height: 44, borderRadius: 12, flexShrink: 0,
-            background: "rgba(255,77,103,0.18)",
+            background: "rgba(255,159,28,0.18)",
             display: "flex", alignItems: "center", justifyContent: "center",
           }}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="#FF4D67">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="#FF9F1C">
               <path d="M13 2 L4 14 H10 L9 22 L20 9 H13 L15 2 Z" />
             </svg>
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div className="eyebrow" style={{ color: "#FF4D67", marginBottom: 2 }}>Low energy?</div>
-            <div style={{ fontSize: 13, fontWeight: 700 }}>Skip the grind — deposit to boost</div>
-            <div style={{ fontSize: 11, color: "var(--text-dim)", marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-              $20 → <b style={{ color: "#22D3EE" }} className="num">5x</b> tickets on every action
+            <div className="eyebrow" style={{ color: "var(--orange)", marginBottom: 2 }}>Running low on energy</div>
+            <div style={{ fontSize: 13, fontWeight: 700 }}>Invite friends to keep predicting</div>
+            <div style={{ fontSize: 11, color: "var(--text-dim)", marginTop: 2 }}>
+              +1 ⚡ per invite · +3 ⚡ when they predict
             </div>
           </div>
-          <Icon name="arrow" size={20} color="#FF4D67" stroke={2.5} />
+          <Icon name="arrow" size={20} color="var(--orange)" stroke={2.5} />
         </div>
       </button>
     </div>

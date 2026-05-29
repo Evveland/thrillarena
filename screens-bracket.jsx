@@ -586,11 +586,13 @@ const PredictModal = ({ matchId, state, actions, onClose }) => {
               <div style={{ fontSize: 11, color: "var(--text-faint)", letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 700, marginBottom: 4, whiteSpace: "nowrap" }}>
                 {currentPick ? "Changing pick" : "Cost"}
               </div>
-              <div className="h-md num" style={{ color: "var(--teal)", whiteSpace: "nowrap" }}>FREE</div>
+              <div className="h-md num" style={{ color: isFree ? "var(--teal)" : "var(--orange)", whiteSpace: "nowrap" }}>
+                {isFree ? "FREE" : `−${cost} ⚡`}
+              </div>
             </div>
             <div style={{ textAlign: "right", flexShrink: 0 }}>
-              <div style={{ fontSize: 11, color: "var(--text-faint)", marginBottom: 4 }}>Your energy</div>
-              <div className="num" style={{ fontFamily: "var(--display)", fontSize: 18, color: "var(--text)", display: "flex", alignItems: "center", gap: 4, justifyContent: "flex-end" }}>
+              <div style={{ fontSize: 11, color: "var(--text-faint)", marginBottom: 4 }}>Balance</div>
+              <div className="num" style={{ fontFamily: "var(--display)", fontSize: 18, color: energy >= cost ? "var(--text)" : "#FF4D67", display: "flex", alignItems: "center", gap: 4, justifyContent: "flex-end" }}>
                 <BoltIcon size={14} color="#FF9F1C" /> {energy}
               </div>
             </div>

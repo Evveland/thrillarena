@@ -9,9 +9,9 @@ const Onboarding = ({ onStart }) => {
       art: "logo",
     },
     {
-      eyebrow: "Energy → Invite loop",
-      title: "Invite friends,\nearn energy.",
-      body: "Predictions are free. Earn ⚡ by inviting friends, joining our channel, and completing social tasks. More energy = more raffle tickets.",
+      eyebrow: "Energy → Picks",
+      title: "Invite friends,\nkeep predicting.",
+      body: "Each prediction costs ⚡1 energy. Earn more by inviting friends, joining our channel, and spinning the wheel. Run out? Complete a task to refill.",
       art: "bolt",
     },
     {
@@ -229,7 +229,7 @@ const HomeScreen = ({ state, actions }) => {
           </button>
 
           <div style={{ marginTop: 12, textAlign: "center", fontSize: 12, color: "var(--text-faint)" }}>
-            <>Predictions are <b style={{ color: "var(--teal)" }}>free</b> · Earn ⚡ by inviting friends</>
+            <>Each pick costs <b style={{ color: "var(--orange)" }}>⚡1</b> · Earn more by inviting friends</>
           </div>
         </div>
       </div>

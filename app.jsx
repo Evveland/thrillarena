@@ -2,10 +2,10 @@
 const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
   "primary": "#5DEDA5",
   "accent": "#FF9F1C",
-  "energyPerPick": 0,
-  "freePicks": 999,
+  "energyPerPick": 1,
+  "freePicks": 0,
   "tokenName": "USDT",
-  "startingEnergy": 0,
+  "startingEnergy": 5,
   "boostFirstFlow": true
 }/*EDITMODE-END*/;
 
@@ -167,12 +167,15 @@ function App() {
       if (opts.closeModal) setModal(null);
       setScreen(s);
     },
-    // Entry point for any match tap. Under the new "Boost-first" flow,
-    // route through the BoostGate first; otherwise jump straight to predict.
+    // Entry point for any match tap.
+    // If energy is 0 and no existing pick, gate with out-of-energy prompt first.
     openPredict: (matchId) => {
-      if (tweaks.boostFirstFlow && !predictions[matchId]) {
-        // first-time picks always pass through the gate; editing an existing
-        // pick goes straight to the modal so the user isn't re-charged.
+      const hasExistingPick = !!predictions[matchId];
+      if (!hasExistingPick && energy <= 0) {
+        setModal({ type: "out-of-energy" });
+        return;
+      }
+      if (tweaks.boostFirstFlow && !hasExistingPick) {
         setModal({ type: "boost-gate", matchId });
       } else {
         setModal({ type: "predict", matchId });
@@ -587,6 +590,9 @@ function App() {
       )}
       {modal?.type === "how-to-win" && (
         <HowToWinModal onClose={() => setModal(null)} />
+      )}
+      {modal?.type === "out-of-energy" && (
+        <OutOfEnergyModal state={state} actions={actions} onClose={() => setModal(null)} />
       )}
 
       {/* Tweaks panel (always rendered — manages its own open state via host protocol) */}
