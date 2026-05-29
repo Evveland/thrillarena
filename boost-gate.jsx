@@ -192,7 +192,7 @@ const BoostGate = ({ matchId, state, actions, onClose }) => {
               boxShadow: `0 6px 18px ${projectedTier.color}55`,
               color: "#0A0E1C",
             }}>
-              Deposit ${amount} & pick →
+              Deposit & Boost Tickets →
             </button>
           </div>
         </div>
