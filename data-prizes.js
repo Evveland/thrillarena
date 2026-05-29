@@ -156,46 +156,32 @@ const POOL_LAYERS = [
 ];
 
 // ─── TODAY'S POOL ──────────────────────────────────────
-// Today is Jun 13 — Matchday 3 of the group stage. Drives the Home hero.
+// Launch: Jun 8 — First match day Jun 11 — First prizes announced Jun 12.
+// Set `preLaunch: true` on `yesterday` until the first draw runs.
 const TODAY_POOL = {
-  date: "2026-06-13",
-  dateLabel: "Fri · Jun 13",
-  matchdayLabel: "Matchday 3",
-  closesInHours: 7,
+  date: "2026-06-08",
+  dateLabel: "Mon · Jun 8",
+  matchdayLabel: "Opening Day",
+  closesInHours: 0,
   closesAtLabel: "23:59 UTC",
-  matches: 4,
+  matches: 0,
   stageOfDay: "group",
-  // One Daily raffle today — $400 budget, 5 winners at $80 each.
   dailySlot: 400,
   combinedTotal: 400,
   winnersTotal: 5,
-  // unlock GATES
   unlock: {
     minPredictions: 3,
     minThrillVisits: 1,
     minThrillTasks: 1,
   },
-  // Yesterday's reveal (the dopamine moment on return) — pure raffle outcome
+  // Pre-launch state — no draws yet. First winners announced Jun 12.
   yesterday: {
-    dateLabel: "Thu · Jun 12",
-    youWon: true,
-    prizeAmount: 80,             // matches the daily raffle slot prize
-    method: "raffle",
-    yourTickets: 4,
-    totalTickets: 18420,
-    totalWinners: 5,             // 5 daily-pool winners
-    fixtureWinnersToday: 5,
-    winProbability: 0.00109,     // 4/18420 — surfaced as "1 in 921"
-    poolKey: "daily",
+    preLaunch: true,
+    firstDrawDate: "2026-06-12",
+    firstDrawLabel: "Thu · Jun 12",
+    daysUntilDraw: 4,
   },
-  // Live "winners just paid" feed
-  recentWinners: [
-    { name: "@goalden_era",  amount: 80,   method: "raffle",     country: "BRA", time: "2m ago", scope: "daily raffle"   },
-    { name: "@pixelpenalty", amount: 60,   method: "raffle",     country: "USA", time: "3m ago", scope: "group D raffle" },
-    { name: "@chip_shot",    amount: 80,   method: "raffle",     country: "ENG", time: "5m ago", scope: "daily raffle"   },
-    { name: "@nutmeg_king",  amount: 60,   method: "raffle",     country: "NED", time: "6m ago", scope: "group B raffle" },
-    { name: "@diegokicks",   amount: 60,   method: "raffle",     country: "ARG", time: "9m ago", scope: "group J raffle" },
-  ],
+  recentWinners: [],
 };
 
 // Total winner counts (for headline copy)

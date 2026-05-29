@@ -496,6 +496,85 @@ function ticketEarnPathsFor(poolKey) {
 // Shown once on return visit (next session after a pool closes).
 // Two flavors: WON or DIDN'T WIN — both pivot to "today's pool is open".
 const DailyRewardModal = ({ data, onClose, onSeeToday }) => {
+  // ── Pre-launch: no draws have happened yet ────────────────
+  if (data.preLaunch) {
+    return (
+      <div className="overlay" style={{
+        background: "radial-gradient(80% 60% at 50% 30%, rgba(93,237,165,0.18), transparent 70%), linear-gradient(180deg, #0D1A24 0%, #0A0E1C 100%)",
+        zIndex: 400, padding: "32px 24px",
+        display: "flex", flexDirection: "column",
+      }}>
+        <div style={{ display: "flex", justifyContent: "flex-end", position: "relative", zIndex: 2 }}>
+          <button className="btn" onClick={onClose} style={{
+            width: 36, height: 36, borderRadius: 999,
+            background: "rgba(255,255,255,0.08)", border: "1px solid var(--line-soft)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
+            <Icon name="x" size={16} />
+          </button>
+        </div>
+
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", textAlign: "center", gap: 0, position: "relative", zIndex: 2 }}>
+          {/* Trophy icon */}
+          <div style={{
+            width: 80, height: 80, borderRadius: "50%", marginBottom: 24,
+            background: "radial-gradient(circle, rgba(93,237,165,0.2), rgba(93,237,165,0.05))",
+            border: "1px solid rgba(93,237,165,0.3)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
+            <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M8 21h8M12 17v4M7 4H4a2 2 0 0 0-2 2v1c0 2.2 1.5 4 3.5 4.5M17 4h3a2 2 0 0 1 2 2v1c0 2.2-1.5 4-3.5 4.5"/>
+              <path d="M7 4a5 5 0 0 0 10 0H7z"/>
+            </svg>
+          </div>
+
+          <div className="eyebrow" style={{ color: "var(--teal)", marginBottom: 12 }}>$20,000 USDT prize pool</div>
+          <div className="h-big" style={{ fontSize: 28, marginBottom: 16, lineHeight: 1.15 }}>
+            First prizes on{"\n"}
+            <span style={{ color: "var(--teal)" }}>{data.firstDrawLabel}</span>
+          </div>
+          <div style={{ fontSize: 14, color: "var(--text-dim)", lineHeight: 1.6, maxWidth: 300, marginBottom: 28 }}>
+            Matches kick off <b style={{ color: "var(--text)" }}>Jun 11</b>. Winners from Day 1 are announced the next morning. Predict today to stack your raffle tickets before the first draw.
+          </div>
+
+          {/* Prize ladder teaser */}
+          <div style={{
+            width: "100%", maxWidth: 320,
+            borderRadius: 18,
+            background: "rgba(255,255,255,0.04)",
+            border: "1px solid var(--line-soft)",
+            overflow: "hidden", marginBottom: 28,
+          }}>
+            {[
+              { label: "Daily raffles",   prize: "$80",    color: "#FF9F1C", sub: "17 draws · 5 winners each" },
+              { label: "Group raffles",   prize: "$60",    color: "#22D3EE", sub: "10 groups · drawn at stage end" },
+              { label: "Final Mega",      prize: "$1,000", color: "#5DEDA5", sub: "5 winners · Jul 19" },
+            ].map((row, i, arr) => (
+              <div key={row.label} style={{
+                display: "flex", alignItems: "center", justifyContent: "space-between",
+                padding: "12px 16px",
+                borderBottom: i < arr.length - 1 ? "1px solid var(--line-soft)" : "none",
+              }}>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 700 }}>{row.label}</div>
+                  <div style={{ fontSize: 11, color: "var(--text-faint)", marginTop: 2 }}>{row.sub}</div>
+                </div>
+                <div className="num" style={{ fontFamily: "var(--display)", fontSize: 20, color: row.color }}>
+                  {row.prize}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <button className="btn btn-primary" onClick={onSeeToday} style={{ position: "relative", zIndex: 2 }}>
+          Start predicting →
+        </button>
+      </div>
+    );
+  }
+
+  // ── Post-draw: won or lost ────────────────────────────────
   const won = data.youWon;
   return (
     <div className="overlay" style={{
