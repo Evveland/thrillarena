@@ -708,7 +708,7 @@ function App() {
 // mount
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(
-  <TelegramFrame width={402} height={820} title="Thrill Arena">
+  <TelegramFrame>
     <App />
   </TelegramFrame>
 );
