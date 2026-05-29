@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Thrill Arena — Telegram Mini-app</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="styles.css" />
+
+  <template id="__bundler_thumbnail">
+    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <rect width="100" height="100" fill="#0F1424"/>
+      <circle cx="50" cy="50" r="22" fill="#5DEDA5"/>
+      <path d="M50 36 C42 49 36 56 36 64 a4 4 0 0 0 7 3 L42 71 h16 l-1 -4 a4 4 0 0 0 7 -3 c0 -8 -6 -15 -14 -28z" fill="#0A0E1C"/>
+    </svg>
+  </template>
+
+  <style>
+    html, body { height: 100%; margin: 0; background: #0a0a0a; overflow: hidden; }
+    #stage {
+      width: 100vw; height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      background: radial-gradient(50% 50% at 50% 40%, #1a2326 0%, #050708 100%);
+    }
+    #root { display: flex; align-items: center; justify-content: center; transform-origin: center center; }
+    /* Ensure flag emoji fall back to color emoji */
+    .flag, .flag * { font-family: "Noto Color Emoji", "Apple Color Emoji", "Segoe UI Emoji", "Twemoji Mozilla", sans-serif !important; }
+  </style>
+
+  <script>
+    // Surface load/runtime errors visibly — better than a silent black screen
+    // (which is what the user reported on Vercel). Catches CDN failures,
+    // CSP blocks, missing files, etc.
+    window.addEventListener('error', function (e) {
+      var box = document.getElementById('__err') || document.body.appendChild(Object.assign(document.createElement('div'), { id: '__err' }));
+      box.style.cssText = 'position:fixed;top:8px;left:8px;right:8px;z-index:99999;padding:10px 12px;font:12px/1.4 ui-monospace,monospace;color:#FFB4B4;background:#2a0e12;border:1px solid #5c2226;border-radius:8px;white-space:pre-wrap;max-height:60vh;overflow:auto';
+      box.textContent = (box.textContent ? box.textContent + '\n' : '') +
+        '[' + (e.filename || 'inline').split('/').pop() + ':' + (e.lineno || '?') + '] ' + (e.message || e.type);
+    }, true);
+
+    // Scale the Telegram frame to fit any viewport (mobile, desktop, embed).
+    // Without this, on phones < 402px wide the frame is clipped and only the
+    // dark gradient background shows — looks like a black screen.
+    (function () {
+      function fit() {
+        var root = document.getElementById('root');
+        var frame = root && root.firstElementChild;
+        if (!frame) return;
+        var fw = frame.offsetWidth, fh = frame.offsetHeight;
+        if (!fw || !fh) return;
+        var pad = 16; // breathing room on tiny phones
+        var sw = window.innerWidth - pad, sh = window.innerHeight - pad;
+        var s = Math.min(sw / fw, sh / fh, 1);
+        root.style.transform = s < 1 ? 'scale(' + s + ')' : '';
+      }
+      window.addEventListener('resize', fit);
+      window.addEventListener('orientationchange', fit);
+      // React + Babel mount asynchronously; poll briefly until the frame appears.
+      var n = 0;
+      var t = setInterval(function () {
+        fit();
+        if (++n > 80) clearInterval(t);
+      }, 100);
+    })();
+  </script>
+</head>
+<body>
+  <div id="stage">
+    <div id="root"></div>
+  </div>
+
+  <!-- React + Babel -->
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+  <!-- Data + frame + tweaks + UI atoms + screens -->
+  <script src="data-teams.js"></script>
+  <script src="data-matches.js"></script>
+  <script src="data-knockout.js"></script>
+  <script src="data.js"></script>
+  <script src="data-prizes.js"></script>
+  <script type="text/babel" src="telegram-frame.jsx"></script>
+  <script type="text/babel" src="tweaks-panel.jsx"></script>
+  <script type="text/babel" src="ui.jsx"></script>
+  <script type="text/babel" src="screens-prizes.jsx"></script>
+  <script type="text/babel" src="screens-home.jsx"></script>
+  <script type="text/babel" src="screens-bracket.jsx"></script>
+  <script type="text/babel" src="screens-tasks.jsx"></script>
+  <script type="text/babel" src="screens-social.jsx"></script>
+  <script type="text/babel" src="screens-flows.jsx"></script>
+  <script type="text/babel" src="screens-boost.jsx"></script>
+  <script type="text/babel" src="screens-how-to-win.jsx"></script>
+  <script type="text/babel" src="boost-gate.jsx"></script>
+  <script type="text/babel" src="app.jsx"></script>
+</body>
+</html>

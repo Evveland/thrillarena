@@ -1,0 +1,356 @@
+/* World Cup Bracket — Telegram Mini-app */
+/* Stadium energy: deep teal + neon */
+
+:root {
+  /* surfaces */
+  --bg-0: #0A0E1C;
+  --bg-1: #131829;
+  --bg-2: #1A2038;
+  --bg-3: #232844;
+  --card: rgba(255, 255, 255, 0.04);
+  --card-hi: rgba(255, 255, 255, 0.07);
+  --line: rgba(93, 237, 165, 0.18);
+  --line-soft: rgba(255, 255, 255, 0.06);
+
+  /* brand */
+  --teal: #5DEDA5;
+  --teal-d: #3FCB85;
+  --teal-glow: rgba(93, 237, 165, 0.35);
+  --red: #FF4D67;
+  --red-d: #D8324A;
+  --orange: #FF9F1C;
+  --gold: #FFD60A;
+
+  /* text */
+  --text: #FFFFFF;
+  --text-dim: rgba(255, 255, 255, 0.62);
+  --text-faint: rgba(255, 255, 255, 0.40);
+
+  /* type */
+  --display: "Anton", "Oswald", "Impact", sans-serif;
+  --body: "DM Sans", system-ui, -apple-system, sans-serif;
+  --mono: "DM Mono", "JetBrains Mono", ui-monospace, monospace;
+
+  /* radii */
+  --r-sm: 8px;
+  --r-md: 14px;
+  --r-lg: 22px;
+  --r-xl: 32px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: var(--body);
+  color: var(--text);
+  background: #0a0a0a;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* root app surface inside the device frame */
+.app {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  color: var(--text);
+  font-family: var(--body);
+  background:
+    radial-gradient(120% 60% at 50% 0%, rgba(93, 237, 165, 0.14), transparent 60%),
+    radial-gradient(80% 50% at 100% 100%, rgba(255, 77, 103, 0.08), transparent 60%),
+    linear-gradient(180deg, #131829 0%, #0A0E1C 100%);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* stadium grain */
+.app::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(rgba(255,255,255,0.03) 1px, transparent 1.5px);
+  background-size: 3px 3px;
+  opacity: 0.5;
+  mix-blend-mode: overlay;
+}
+
+.app-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-top: 0;
+  padding-bottom: 92px;
+  position: relative;
+  z-index: 1;
+}
+
+.app-content::-webkit-scrollbar { display: none; }
+
+/* ─── Type ──────────────────────────────────────── */
+.h-display {
+  font-family: var(--display);
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  line-height: 0.92;
+  color: var(--text);
+}
+.h-big   { font-family: var(--display); font-size: 56px; line-height: 0.9; text-transform: uppercase; letter-spacing: 0.01em; }
+.h-xl    { font-family: var(--display); font-size: 36px; line-height: 0.95; text-transform: uppercase; letter-spacing: 0.015em; }
+.h-lg    { font-family: var(--display); font-size: 26px; line-height: 1; text-transform: uppercase; letter-spacing: 0.02em; }
+.h-md    { font-family: var(--display); font-size: 20px; line-height: 1; text-transform: uppercase; letter-spacing: 0.03em; }
+
+.eyebrow {
+  font-family: var(--body);
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--teal);
+}
+.eyebrow.muted { color: var(--text-faint); }
+
+.num { font-feature-settings: "tnum" 1; font-variant-numeric: tabular-nums; }
+
+/* ─── Buttons ────────────────────────────────────── */
+.btn {
+  appearance: none;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  user-select: none;
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  height: 56px;
+  border-radius: var(--r-lg);
+  background: var(--teal);
+  color: #0A0E1C;
+  font-family: var(--display);
+  font-size: 20px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  box-shadow:
+    0 8px 24px var(--teal-glow),
+    inset 0 -3px 0 rgba(0,0,0,0.15);
+  transition: transform 0.1s ease, box-shadow 0.1s ease, filter 0.1s ease;
+}
+.btn-primary:active { transform: translateY(1px); filter: brightness(0.95); }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
+
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 18px;
+  border-radius: 999px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  color: var(--text);
+  font-family: var(--body);
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 56px;
+  border-radius: var(--r-lg);
+  background: var(--card-hi);
+  border: 1px solid var(--line);
+  color: var(--text);
+  font-family: var(--display);
+  font-size: 18px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* ─── Cards ──────────────────────────────────────── */
+.card {
+  background: var(--card);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r-lg);
+  padding: 18px;
+}
+
+/* ─── Chips ──────────────────────────────────────── */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-dim);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.chip.energy { color: var(--orange); border-color: rgba(255, 159, 28, 0.35); background: rgba(255, 159, 28, 0.08); }
+.chip.token  { color: var(--teal);   border-color: rgba(93, 237, 165, 0.3);  background: rgba(93, 237, 165, 0.08); }
+.chip.teal   { color: var(--teal);   border-color: rgba(93,237,165, 0.4);  background: rgba(93,237,165, 0.08); }
+.chip.red    { color: var(--red);    border-color: rgba(255,77,103, 0.4);   background: rgba(255,77,103, 0.08); }
+
+/* ─── Bottom nav ─────────────────────────────────── */
+.nav {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 14px;
+  z-index: 30;
+  height: 60px;
+  border-radius: 999px;
+  background: rgba(19, 24, 41, 0.78);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid var(--line);
+  box-shadow:
+    0 -2px 24px rgba(0,0,0,0.4),
+    0 18px 40px rgba(0,0,0,0.35);
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  padding: 4px;
+}
+.nav-item {
+  appearance: none;
+  border: 0;
+  background: none;
+  font: inherit;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  border-radius: 999px;
+  color: var(--text-faint);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+.nav-item.active {
+  color: #0A0E1C;
+  background: var(--teal);
+  box-shadow: 0 4px 12px var(--teal-glow);
+}
+.nav-item.active .nav-label { color: #0A0E1C; }
+
+/* ─── Flag chips ─────────────────────────────────── */
+.flag {
+  font-family: "Twemoji Country Flags", "Noto Color Emoji", "Apple Color Emoji", "Segoe UI Emoji", sans-serif;
+  font-style: normal;
+  line-height: 1;
+}
+
+/* ─── Misc ───────────────────────────────────────── */
+.divider { height: 1px; background: var(--line-soft); border: 0; margin: 0; }
+
+.glow-teal { box-shadow: 0 0 0 1px var(--teal), 0 0 24px var(--teal-glow); }
+.glow-red  { box-shadow: 0 0 0 1px var(--red), 0 0 18px rgba(255,77,103, 0.4); }
+
+/* shimmer for token / mint */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.token-shimmer {
+  background: linear-gradient(90deg, var(--teal) 0%, #C8FFE0 50%, var(--teal) 100%);
+  background-size: 200% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  animation: shimmer 3s linear infinite;
+}
+
+/* Pulsing energy */
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.06); }
+}
+.pulse { animation: pulse 1.6s ease-in-out infinite; }
+
+/* slide-up modal */
+@keyframes slideUp {
+  from { transform: translateY(100%); opacity: 0.5; }
+  to   { transform: translateY(0); opacity: 1; }
+}
+.modal {
+  position: absolute;
+  inset: 0;
+  z-index: 100;
+  background: rgba(8, 14, 16, 0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+.modal-sheet {
+  background: linear-gradient(180deg, #1A2038 0%, #131829 100%);
+  border-top-left-radius: var(--r-xl);
+  border-top-right-radius: var(--r-xl);
+  border-top: 1px solid var(--line);
+  padding: 8px 20px 36px;
+  max-height: 85%;
+  overflow-y: auto;
+}
+.modal-handle {
+  width: 38px;
+  height: 4px;
+  background: rgba(255,255,255,0.18);
+  border-radius: 2px;
+  margin: 8px auto 18px;
+}
+
+/* full-screen overlay (result, casino) */
+.overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 110;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ─── animated wheel ─────────────────────────────── */
+@keyframes wheelSpin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(var(--spin-end, 720deg)); }
+}
+
+/* ─── confetti / celebration ─────────────────────── */
+@keyframes pop {
+  0%   { transform: scale(0.6); opacity: 0; }
+  60%  { transform: scale(1.06); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.pop { animation: pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+
+/* ─── boost chip pulse ───────────────────────────── */
+@keyframes boostPulse {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.045); }
+}
