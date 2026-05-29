@@ -85,6 +85,7 @@ function App() {
       try {
         await SupaDB.loadMatchUUIDs();
         const user = await SupaDB.initUser();
+        console.log("[App] user initialised:", user?.id, "telegram:", user?.telegram_id);
         setDbUser(user);
         const saved = await SupaDB.loadUserState(user.id);
         if (saved.predictions && Object.keys(saved.predictions).length > 0) {

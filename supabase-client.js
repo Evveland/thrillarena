@@ -1,20 +1,42 @@
 // ─── Supabase client + Telegram auth + CRUD helpers ──────
-// Loaded before app.jsx. Exposes window.SupaDB.
+// Exposes window.SupaDB. Auth flow:
+//   1. POST initData to /api/auth/telegram (HMAC verified server-side)
+//   2. Receive deterministic JWT signed with SUPABASE_JWT_SECRET
+//   3. Recreate Supabase client with JWT in Authorization header
+//      → auth.uid() in RLS = deterministic UUID from telegram_id
 (function () {
   const SUPABASE_URL = "https://zlslbgtuvjswkeeamxvb.supabase.co";
-  const SUPABASE_KEY = "sb_publishable_xD8EAe55mT6H6lALeAJSCQ_dZzzrNni";
-
+  const SUPABASE_ANON_KEY = "sb_publishable_xD8EAe55mT6H6lALeAJSCQ_dZzzrNni";
   const { createClient } = window.supabase;
-  const db = createClient(SUPABASE_URL, SUPABASE_KEY, {
-    auth: { persistSession: true, storageKey: "ta-session", autoRefreshToken: false },
+
+  // ── Client — starts anonymous, replaced after auth ───────
+  // Using `let` so we can swap to an authenticated client after login.
+  // All CRUD helpers close over `db` and will automatically use the
+  // authenticated version once `authenticateWithTelegram` runs.
+  let db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false },
   });
 
+  function makeAuthenticatedClient(jwt) {
+    // Do NOT use supabase.auth.setSession() — in Supabase JS v2 that
+    // method makes a network call to validate the refresh_token, which
+    // fails for custom JWTs. Instead, bake the JWT directly into the
+    // Authorization header. Supabase verifies it against the JWT secret
+    // server-side, so auth.uid() and RLS policies work correctly.
+    return createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      global: { headers: { Authorization: `Bearer ${jwt}` } },
+      auth:   { persistSession: false, autoRefreshToken: false },
+    });
+  }
+
   // ── Match UUID lookup ─────────────────────────────────────
+  // Matches are publicly readable — no auth needed.
   const matchUUIDs = {};
 
   async function loadMatchUUIDs() {
-    const { data } = await db.from("matches").select("id, external_id");
-    if (data) data.forEach(m => { matchUUIDs[m.external_id] = m.id; });
+    const { data, error } = await db.from("matches").select("id, external_id");
+    if (error) console.warn("[SupaDB] loadMatchUUIDs error:", error.message);
+    if (data)  data.forEach(m => { matchUUIDs[m.external_id] = m.id; });
   }
 
   function matchUUID(externalId) {
@@ -22,53 +44,51 @@
   }
 
   // ── Auth ─────────────────────────────────────────────────
-  // Returns { userId, telegramId, username, displayName, jwt }
   async function authenticateWithTelegram() {
     const initData = window.Telegram?.WebApp?.initData;
 
-    // ── Production path: verify with server ──────────────
+    // ── Production: verify initData with server ───────────
     if (initData) {
-      const res = await fetch("/api/auth/telegram", {
-        method:  "POST",
-        headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({ initData }),
-      });
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(`Telegram auth failed: ${err.error || res.status}`);
+      let res, data;
+      try {
+        res  = await fetch("/api/auth/telegram", {
+          method:  "POST",
+          headers: { "Content-Type": "application/json" },
+          body:    JSON.stringify({ initData }),
+        });
+        data = await res.json();
+      } catch (e) {
+        console.error("[SupaDB] fetch /api/auth/telegram failed:", e);
+        throw e;
       }
 
-      const data = await res.json();
-      // Set the verified JWT as the Supabase session
-      await db.auth.setSession({ access_token: data.jwt, refresh_token: data.jwt });
+      if (!res.ok) {
+        console.error("[SupaDB] auth error:", data?.error, "status:", res.status);
+        throw new Error(data?.error || `Auth failed ${res.status}`);
+      }
+
+      // Swap to authenticated client — all subsequent calls carry the JWT
+      db = makeAuthenticatedClient(data.jwt);
+      if (window.SupaDB) window.SupaDB.db = db;
+
+      console.log("[SupaDB] authenticated as telegram user", data.telegramId, "→ uuid", data.userId);
       return data;
     }
 
-    // ── Dev / browser fallback: anonymous auth ────────────
-    console.warn("[SupaDB] No Telegram initData — using anonymous auth (dev mode)");
-    const { data: { session }, error } = await db.auth.getSession();
-    if (session) {
-      return {
-        userId:      session.user.id,
-        telegramId:  null,
-        username:    null,
-        displayName: "Dev User",
-      };
+    // ── Dev fallback: anonymous auth ──────────────────────
+    console.warn("[SupaDB] No Telegram initData — anonymous auth (dev mode)");
+    const { data: existing } = await db.auth.getSession();
+    if (existing?.session) {
+      return { userId: existing.session.user.id, telegramId: null, username: null, displayName: "Dev User" };
     }
-    const { data: anonData, error: anonErr } = await db.auth.signInAnonymously();
+    const { data: anon, error: anonErr } = await db.auth.signInAnonymously();
     if (anonErr) throw anonErr;
-    return {
-      userId:      anonData.user.id,
-      telegramId:  null,
-      username:    null,
-      displayName: "Dev User",
-    };
+    db = makeAuthenticatedClient(anon.session.access_token);
+    if (window.SupaDB) window.SupaDB.db = db;
+    return { userId: anon.user.id, telegramId: null, username: null, displayName: "Dev User" };
   }
 
   // ── User init ─────────────────────────────────────────────
-  // Authenticates, then upserts the user row keyed by the
-  // deterministic UUID. Returns the full user row.
   async function initUser() {
     const auth = await authenticateWithTelegram();
 
@@ -77,9 +97,10 @@
       .upsert(
         {
           id:           auth.userId,
-          telegram_id:  auth.telegramId || -(Math.abs(parseInt(auth.userId.replace(/-/g,"").slice(0,8),16))),
-          username:     auth.username    || null,
-          display_name: auth.displayName || null,
+          telegram_id:  auth.telegramId
+                          ?? -(Math.abs(parseInt(auth.userId.replace(/-/g, "").slice(0, 8), 16))),
+          username:     auth.username    ?? null,
+          display_name: auth.displayName ?? null,
         },
         { onConflict: "id" }
       )
@@ -87,7 +108,7 @@
       .single();
 
     if (error) {
-      console.warn("[SupaDB] user upsert error:", error.message);
+      console.warn("[SupaDB] user upsert error:", error.message, error.code);
       return { id: auth.userId, telegram_id: auth.telegramId, energy_balance: 5 };
     }
     return data;
@@ -101,27 +122,26 @@
         .eq("user_id", userId),
       db.from("user_boosts")
         .select("trigger, multiplier")
-        .eq("user_id", userId)
-        .eq("is_active", true)
-        .order("multiplier", { ascending: false })
-        .limit(1),
+        .eq("user_id", userId).eq("is_active", true)
+        .order("multiplier", { ascending: false }).limit(1),
       db.from("deposits")
         .select("deposit_number, amount, currency")
         .eq("user_id", userId)
         .order("deposit_number", { ascending: true }),
     ]);
 
-    const predsMap = {};
-    if (predsRes.data) {
-      const uuidToExt = {};
-      Object.entries(matchUUIDs).forEach(([ext, uuid]) => { uuidToExt[uuid] = ext; });
-      predsRes.data.forEach(p => {
-        const ext = uuidToExt[p.match_id];
-        if (ext) predsMap[ext] = p.prediction_value;
-      });
-    }
+    if (predsRes.error)   console.warn("[SupaDB] predictions load:", predsRes.error.message);
+    if (boostsRes.error)  console.warn("[SupaDB] boosts load:",      boostsRes.error.message);
+    if (depositsRes.error)console.warn("[SupaDB] deposits load:",    depositsRes.error.message);
 
-    const topBoost         = boostsRes.data?.[0];
+    const uuidToExt = Object.fromEntries(Object.entries(matchUUIDs).map(([ext, id]) => [id, ext]));
+    const predsMap  = {};
+    (predsRes.data || []).forEach(p => {
+      const ext = uuidToExt[p.match_id];
+      if (ext) predsMap[ext] = p.prediction_value;
+    });
+
+    const topBoost          = boostsRes.data?.[0];
     const lifetimeDeposited = (depositsRes.data || []).reduce((s, d) => s + Number(d.amount), 0);
 
     return {
@@ -135,65 +155,56 @@
   // ── Write prediction ──────────────────────────────────────
   async function savePrediction(userId, matchExternalId, predictionValue, energyCost) {
     const matchId = matchUUID(matchExternalId);
-    if (!matchId) { console.warn("[SupaDB] no UUID for match:", matchExternalId); return; }
-    await db.from("predictions").upsert(
+    if (!matchId) { console.warn("[SupaDB] unknown match:", matchExternalId); return; }
+    const { error } = await db.from("predictions").upsert(
       { user_id: userId, match_id: matchId, prediction_value: predictionValue, energy_cost: energyCost },
       { onConflict: "user_id,match_id" }
     );
+    if (error) console.warn("[SupaDB] savePrediction error:", error.message);
   }
 
   // ── Write energy ledger + update balance ──────────────────
   async function recordEnergy(userId, actionType, delta, balanceAfter, opts = {}) {
-    await Promise.all([
+    const [ledgerRes, userRes] = await Promise.all([
       db.from("energy_ledger").insert({
-        user_id:              userId,
-        action_type:          actionType,
-        delta,
-        balance_after:        balanceAfter,
-        related_user_id:      opts.relatedUserId      || null,
-        notes:                opts.notes              || null,
+        user_id: userId, action_type: actionType,
+        delta, balance_after: balanceAfter,
+        related_user_id: opts.relatedUserId ?? null,
+        notes:           opts.notes         ?? null,
       }),
       db.from("users").update({ energy_balance: balanceAfter }).eq("id", userId),
     ]);
+    if (ledgerRes.error) console.warn("[SupaDB] energy_ledger:", ledgerRes.error.message);
+    if (userRes.error)   console.warn("[SupaDB] energy update:", userRes.error.message);
   }
 
   // ── Write deposit + boost ─────────────────────────────────
   async function saveDeposit(userId, depositNumber, amount, currency, multiplier) {
-    const trigger =
-      depositNumber === 1 ? "first_deposit"  :
-      depositNumber === 2 ? "second_deposit" :
-                            "third_deposit";
-    await Promise.all([
-      db.from("deposits").upsert(
-        { user_id: userId, deposit_number: depositNumber, amount, currency },
-        { onConflict: "user_id,deposit_number" }
-      ),
-      db.from("user_boosts")
-        .update({ is_active: false })
-        .eq("user_id", userId)
-        .then(() =>
-          db.from("user_boosts").insert({
-            user_id:    userId,
-            trigger,
-            multiplier,
-            is_active:  true,
-          })
-        ),
-    ]);
+    const trigger = depositNumber === 1 ? "first_deposit"
+                  : depositNumber === 2 ? "second_deposit"
+                  :                       "third_deposit";
+    await db.from("deposits").upsert(
+      { user_id: userId, deposit_number: depositNumber, amount, currency },
+      { onConflict: "user_id,deposit_number" }
+    );
+    await db.from("user_boosts").update({ is_active: false }).eq("user_id", userId);
+    const { error } = await db.from("user_boosts").insert({
+      user_id: userId, trigger, multiplier, is_active: true,
+    });
+    if (error) console.warn("[SupaDB] saveBoost:", error.message);
   }
 
   // ── Write Thrill task ─────────────────────────────────────
   async function saveTask(userId, taskType) {
-    await db.from("thrill_tasks").insert({
-      user_id:     userId,
-      task_type:   taskType,
-      status:      "completed",
-      verified_at: new Date().toISOString(),
+    const { error } = await db.from("thrill_tasks").insert({
+      user_id: userId, task_type: taskType,
+      status: "completed", verified_at: new Date().toISOString(),
     });
+    if (error) console.warn("[SupaDB] saveTask:", error.message);
   }
 
   window.SupaDB = {
-    db,
+    get db() { return db; },
     initUser,
     loadMatchUUIDs,
     matchUUID,
