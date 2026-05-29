@@ -584,15 +584,13 @@ const PredictModal = ({ matchId, state, actions, onClose }) => {
           <div className="card" style={{ padding: "14px 16px", marginBottom: 16, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
             <div style={{ minWidth: 0 }}>
               <div style={{ fontSize: 11, color: "var(--text-faint)", letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 700, marginBottom: 4, whiteSpace: "nowrap" }}>
-                {isFree ? (currentPick ? "Changing pick" : "Free pick") : "Cost"}
+                {currentPick ? "Changing pick" : "Cost"}
               </div>
-              <div className="h-md num" style={{ color: isFree ? "var(--teal)" : "var(--orange)", whiteSpace: "nowrap" }}>
-                {isFree ? "FREE" : `−${cost} ⚡`}
-              </div>
+              <div className="h-md num" style={{ color: "var(--teal)", whiteSpace: "nowrap" }}>FREE</div>
             </div>
             <div style={{ textAlign: "right", flexShrink: 0 }}>
-              <div style={{ fontSize: 11, color: "var(--text-faint)", marginBottom: 4 }}>Balance</div>
-              <div className="num" style={{ fontFamily: "var(--display)", fontSize: 18, color: energy >= cost ? "var(--text)" : "var(--red)", display: "flex", alignItems: "center", gap: 4, justifyContent: "flex-end" }}>
+              <div style={{ fontSize: 11, color: "var(--text-faint)", marginBottom: 4 }}>Your energy</div>
+              <div className="num" style={{ fontFamily: "var(--display)", fontSize: 18, color: "var(--text)", display: "flex", alignItems: "center", gap: 4, justifyContent: "flex-end" }}>
                 <BoltIcon size={14} color="#FF9F1C" /> {energy}
               </div>
             </div>
@@ -633,15 +631,6 @@ const PredictModal = ({ matchId, state, actions, onClose }) => {
           </a>
         )}
 
-        {!isFree && (home.resolved && away.resolved) && energy < cost && (
-          <button className="btn" onClick={() => actions.goto("tasks", { closeModal: true })} style={{
-            marginTop: 10, width: "100%", height: 44,
-            color: "var(--orange)", fontSize: 13, fontWeight: 700,
-            letterSpacing: "0.06em", textTransform: "uppercase",
-          }}>
-            ⚡ Earn more energy →
-          </button>
-        )}
       </div>
     </div>
   );
@@ -676,7 +665,7 @@ const PickResultModal = ({ teamCode, freeUsed, onClose }) => {
         <div className="h-big" style={{ marginBottom: 12 }}>{team.short}<br/>FTW</div>
         <div style={{ fontSize: 14, color: "var(--text-dim)", marginBottom: 22, padding: "0 12px" }}>
           You called <b style={{ color: "var(--text)" }}>{team.name}</b> to win.
-          {freeUsed ? " Free pick used." : ""} You'll see the result after the final whistle.
+          You'll see the result after the final whistle.
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>

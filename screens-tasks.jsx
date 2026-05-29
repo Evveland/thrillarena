@@ -29,12 +29,11 @@ const TasksScreen = ({ state, actions }) => {
               <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
                 <BoltIcon size={36} color="#FF9F1C" />
                 <div className="h-big num">{energy}</div>
-                <div style={{ fontSize: 14, color: "var(--text-faint)", marginLeft: 4 }}>/ 200</div>
               </div>
             </div>
-            <div style={{ textAlign: "right", fontSize: 11, color: "var(--text-dim)", letterSpacing: "0.04em" }}>
-              <div style={{ fontWeight: 700, color: "var(--orange)", fontFamily: "var(--display)", fontSize: 16, marginBottom: 2 }}>−10/PICK</div>
-              <div>after free picks</div>
+            <div style={{ textAlign: "right", fontSize: 11, color: "var(--text-dim)", letterSpacing: "0.04em", maxWidth: 110 }}>
+              <div style={{ fontWeight: 700, color: "var(--teal)", fontFamily: "var(--display)", fontSize: 13, marginBottom: 2, lineHeight: 1.3 }}>Earned by inviting friends</div>
+              <div>& completing tasks</div>
             </div>
           </div>
           <div style={{ height: 8, borderRadius: 4, background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
@@ -115,8 +114,9 @@ const TasksScreen = ({ state, actions }) => {
         }}>
           <Icon name="info" size={16} color="var(--teal)" />
           <div>
-            Energy regenerates <b style={{ color: "var(--teal)" }}>+1 every 30 min</b> automatically.
-            Top up faster by inviting friends — both of you get rewarded.
+            Invite friends to earn ⚡ instantly. Get <b style={{ color: "var(--teal)" }}>+1 ⚡</b> per invite sent,
+            {" "}<b style={{ color: "var(--orange)" }}>+3 ⚡</b> when they make their first prediction,
+            and <b style={{ color: "var(--gold)" }}>+5 ⚡</b> when they complete a Thrill task.
           </div>
         </div>
       </div>

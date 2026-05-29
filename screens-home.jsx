@@ -9,9 +9,9 @@ const Onboarding = ({ onStart }) => {
       art: "logo",
     },
     {
-      eyebrow: "Energy → Picks",
-      title: "First two\npicks are free.",
-      body: "After that, each prediction costs ⚡10 energy. Earn more by completing tasks at Thrill Casino.",
+      eyebrow: "Energy → Invite loop",
+      title: "Invite friends,\nearn energy.",
+      body: "Predictions are free. Earn ⚡ by inviting friends, joining our channel, and completing social tasks. More energy = more raffle tickets.",
       art: "bolt",
     },
     {
@@ -229,9 +229,7 @@ const HomeScreen = ({ state, actions }) => {
           </button>
 
           <div style={{ marginTop: 12, textAlign: "center", fontSize: 12, color: "var(--text-faint)" }}>
-            {freePicksLeft > 0
-              ? <>You have <b style={{ color: "var(--teal)" }}>{freePicksLeft} free picks</b> remaining</>
-              : <>Cost · <b style={{ color: "var(--orange)" }}>⚡{energyPerPick} energy</b></>}
+            <>Predictions are <b style={{ color: "var(--teal)" }}>free</b> · Earn ⚡ by inviting friends</>
           </div>
         </div>
       </div>

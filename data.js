@@ -14,11 +14,10 @@ const ALL_MATCHES = [...groupMatches, ...R32, ...R16, ...QF, ...SF, ...THIRD, ..
 
 // ─── TASKS ────────────────────────────────────────────────
 const TASKS = [
-  { id: "spin", title: "Daily Spin", sub: "Spin the Thrill wheel", reward: "1–50 ⚡", cooldown: "Ready", type: "spin", primary: true, icon: "wheel" },
-  { id: "ad",      title: "Watch a Thrill ad",     sub: "30s · Premium spot",            reward: "+5 ⚡",  cooldown: "Ready", type: "ad",      icon: "play" },
-  { id: "invite",  title: "Invite a friend",        sub: "0 of 5 invited",                 reward: "+30 ⚡ each", cooldown: "Open", type: "invite",  icon: "people" },
-  { id: "channel", title: "Join Telegram channel",  sub: "@thrill_arena",                  reward: "+20 ⚡", cooldown: "Once",  type: "channel", icon: "telegram" },
-  { id: "wallet",  title: "Connect TON wallet",     sub: "Required for USDT payout",       reward: "+50 ⚡", cooldown: "Once",  type: "wallet",  icon: "wallet" },
+  { id: "spin",    title: "Daily Spin",             sub: "Spin to earn up to ⚡50",         reward: "1–50 ⚡",    cooldown: "Ready", type: "spin",    primary: true, icon: "wheel" },
+  { id: "invite",  title: "Invite a friend",        sub: "0 of 5 invited",                  reward: "+1 ⚡ each", cooldown: "Open",  type: "invite",  icon: "people" },
+  { id: "channel", title: "Join Telegram channel",  sub: "@thrill_arena",                   reward: "+20 ⚡",     cooldown: "Once",  type: "channel", icon: "telegram" },
+  { id: "wallet",  title: "Connect TON wallet",     sub: "Required for USDT payout",        reward: "+50 ⚡",     cooldown: "Once",  type: "wallet",  icon: "wallet" },
 ];
 
 // ─── LEADERBOARDS ─────────────────────────────────────────
@@ -94,9 +93,8 @@ const PRIZE_TIERS = [];
 
 // ─── BOOST / TICKET MULTIPLIER LADDER ─────────────────────
 // Deposit tiers in USD. The multiplier applies to TICKETS earned from
-// every action — predictions, Thrill visits, tasks. More tickets = better
-// raffle odds across every pool. Latest deposit defines your tier; boost
-// persists across the campaign — no per-stage decay anymore.
+// correct predictions and tasks. More tickets = better raffle odds.
+// Latest deposit defines your tier; boost persists across the campaign.
 const BOOST_TIERS = [
   { min: 0,   mult: 1,   label: "1x",   unlockLabel: "Base · 1 ticket per action", color: "#5A6480" },
   { min: 10,  mult: 2,   label: "2x",   unlockLabel: "2 tickets per action",       color: "#5DEDA5" },

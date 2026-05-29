@@ -2,10 +2,10 @@
 const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
   "primary": "#5DEDA5",
   "accent": "#FF9F1C",
-  "energyPerPick": 10,
-  "freePicks": 2,
+  "energyPerPick": 0,
+  "freePicks": 999,
   "tokenName": "USDT",
-  "startingEnergy": 30,
+  "startingEnergy": 0,
   "boostFirstFlow": true
 }/*EDITMODE-END*/;
 
@@ -300,15 +300,21 @@ function App() {
       setEnergy(e => Math.min(200, e + 20));
     },
 
-    // Invites sent
+    // Invites sent — +1 ⚡ instantly per invite opened, +3 ⚡ when friend activates (mocked on send)
     addInvites: (count) => {
       setInvitesSent(n => n + count);
-      // First invite send completes the task
-      if (count > 0) setTasksDone(t => ({ ...t, invite: true }));
-      // Friend joins are pending — we don't grant the +30 yet (mock).
+      if (count > 0) {
+        setTasksDone(t => ({ ...t, invite: true }));
+        // +1 immediately for each invite link opened
+        const instant = count * 1;
+        setEnergy(e => Math.min(999, e + instant));
+        if (window.SupaDB && dbUser) {
+          SupaDB.recordEnergy(dbUser.id, "invite_opened", instant, energy + instant);
+        }
+      }
       pushNotification({
-        title: `${count} invite${count > 1 ? "s" : ""} sent`,
-        body: `Pending +${count * 30} ⚡ — paid when each friend makes their first pick.`,
+        title: `${count} invite${count > 1 ? "s" : ""} sent · +${count} ⚡`,
+        body: `+3 ⚡ more when each friend makes their first prediction.`,
         kind: "invite",
       });
     },
