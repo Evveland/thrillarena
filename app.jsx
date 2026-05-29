@@ -76,6 +76,40 @@ function App() {
   const [picksMade, setPicksMade] = React.useState(0);
   const [tasksDone, setTasksDone] = React.useState({});
 
+  // ── Supabase user ─────────────────────────────────────
+  const [dbUser, setDbUser] = React.useState(null);
+
+  React.useEffect(() => {
+    if (!window.SupaDB) return;
+    (async () => {
+      try {
+        await SupaDB.loadMatchUUIDs();
+        const user = await SupaDB.initUser();
+        setDbUser(user);
+        const saved = await SupaDB.loadUserState(user.id);
+        if (saved.predictions && Object.keys(saved.predictions).length > 0) {
+          setPredictions(saved.predictions);
+          setPicksMade(Object.keys(saved.predictions).length);
+        }
+        if (user.energy_balance != null && user.energy_balance !== 30) {
+          setEnergy(user.energy_balance);
+        }
+        if (saved.lifetimeDeposited > 0) {
+          setBoostRaw(b => ({
+            ...b,
+            lifetimeDeposited: saved.lifetimeDeposited,
+            deposits: Array.from({ length: saved.depositCount }, (_, i) => ({
+              ts: Date.now(), currency: "USDT", cryptoAmount: 0,
+              usdAmount: 0, depositNumber: i + 1,
+            })),
+          }));
+        }
+      } catch (e) {
+        console.warn("[Supabase] init error:", e);
+      }
+    })();
+  }, []);
+
   // ── Missing-feature state ─────────────────────────────
   const [wallet, setWallet] = React.useState(null); // { name, address } once connected
   const [channelJoined, setChannelJoined] = React.useState(false);
@@ -161,7 +195,8 @@ function App() {
       const wasNew = !predictions[matchId];
       setPredictions(p => ({ ...p, [matchId]: teamCode }));
       if (wasNew) {
-        if (freePicksLeft > 0) setPicksMade(n => n + 1);
+        const isFree = freePicksLeft > 0;
+        if (isFree) setPicksMade(n => n + 1);
         else {
           setEnergy(e => e - cost);
           setPicksMade(n => n + 1);
@@ -175,6 +210,15 @@ function App() {
           dailyTickets: ps.dailyTickets + ticketsAwarded,
           ticketToast: { tickets: ticketsAwarded, action: "Prediction locked in", _ts: Date.now() },
         }));
+        // ── Persist to Supabase ───────────────────────────────────
+        if (window.SupaDB && dbUser) {
+          const energyCost = isFree ? 0 : cost;
+          SupaDB.savePrediction(dbUser.id, matchId, teamCode, energyCost);
+          if (!isFree) {
+            const newBal = Math.max(0, energy - cost);
+            SupaDB.recordEnergy(dbUser.id, "prediction_submitted", -cost, newBal);
+          }
+        }
       }
       setModal({ type: "result", teamCode, freeUsed: wasNew && freePicksLeft > 0 });
 
@@ -229,6 +273,9 @@ function App() {
         dailyTickets: ps.dailyTickets + ticketsAwarded,
         ticketToast: { tickets: ticketsAwarded, action: "Completed a Thrill task", _ts: Date.now() },
       }));
+      if (window.SupaDB && dbUser) {
+        SupaDB.saveTask(dbUser.id, "thrill_task");
+      }
     },
     dismissTicketToast: () => setPoolState(ps => ({ ...ps, ticketToast: null })),
     dismissDailyReveal: () => setPoolState(ps => ({ ...ps, showDailyReveal: false })),
@@ -332,6 +379,11 @@ function App() {
         stagesSinceDeposit: 0, // reset decay
         deposits: [...b.deposits, deposit],
       }));
+      // ── Persist deposit + boost to Supabase ──────────────
+      if (window.SupaDB && dbUser) {
+        const depositNumber = (boostRaw.deposits?.length || 0) + 1;
+        SupaDB.saveDeposit(dbUser.id, depositNumber, usdAmount, currency, newTier.mult);
+      }
       // toast
       setTimeout(() => pushNotification({
         title: `Boost activated · ${fmtMult(newTier.mult)}`,
