@@ -43,6 +43,12 @@
         '[' + (e.filename || 'inline').split('/').pop() + ':' + (e.lineno || '?') + '] ' + (e.message || e.type);
     }, true);
 
+    // Signal Telegram the app is ready and request full-screen height
+    if (window.Telegram?.WebApp) {
+      Telegram.WebApp.ready();
+      Telegram.WebApp.expand();
+    }
+
     // Scale the Telegram frame to fit any viewport (mobile, desktop, embed).
     // Without this, on phones < 402px wide the frame is clipped and only the
     // dark gradient background shows — looks like a black screen.
@@ -73,6 +79,9 @@
   <div id="stage">
     <div id="root"></div>
   </div>
+
+  <!-- Telegram Mini App SDK (injected by Telegram; loaded here for browser fallback) -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
   <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
