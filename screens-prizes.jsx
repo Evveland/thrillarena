@@ -88,12 +88,15 @@ const DailyPoolCard = ({ state, actions }) => {
                 <div style={{ fontFamily: "var(--display)", fontSize: 14, color: "var(--orange)" }}>USDT</div>
               </div>
               <div style={{ fontSize: 11, color: "var(--text-dim)", marginTop: 4, whiteSpace: "nowrap" }}>
-                {TODAY_POOL.dateLabel} · <b className="num" style={{ color: "var(--text)" }}>5 winner slots</b> drawn today
+                {TODAY_POOL.matches > 0
+                  ? <>{TODAY_POOL.dateLabel} · <b className="num" style={{ color: "var(--text)" }}>5 winner slots</b> drawn today</>
+                  : <>First matches <b style={{ color: "var(--text)" }}>Jun 11</b> · first draw <b style={{ color: "var(--gold)" }}>Jun 12</b></>
+                }
               </div>
             </div>
 
-            {/* countdown ring */}
-            <CountdownRing hours={TODAY_POOL.closesInHours} />
+            {/* countdown ring — hide before tournament starts */}
+            {TODAY_POOL.matches > 0 && <CountdownRing hours={TODAY_POOL.closesInHours} />}
           </div>
 
           {/* progress gates */}
@@ -191,12 +194,36 @@ const UnlockGates = ({ prog }) => {
 
 // Live "winner just paid" rotating banner — social proof for return visits
 const WinnerTicker = () => {
+  const winners = TODAY_POOL.recentWinners;
   const [i, setI] = React.useState(0);
   React.useEffect(() => {
-    const t = setInterval(() => setI(n => (n + 1) % TODAY_POOL.recentWinners.length), 2400);
+    if (!winners.length) return;
+    const t = setInterval(() => setI(n => (n + 1) % winners.length), 2400);
     return () => clearInterval(t);
-  }, []);
-  const w = TODAY_POOL.recentWinners[i];
+  }, [winners.length]);
+
+  // Pre-launch: no winners yet
+  if (!winners.length) {
+    return (
+      <div style={{
+        display: "flex", alignItems: "center", gap: 8,
+        padding: "9px 16px",
+        background: "rgba(0,0,0,0.30)",
+        borderTop: "1px solid var(--line-soft)",
+      }}>
+        <span style={{
+          width: 6, height: 6, borderRadius: 3, flexShrink: 0,
+          background: "var(--teal)", boxShadow: "0 0 8px var(--teal-glow)",
+          animation: "boostPulse 1.4s ease-in-out infinite",
+        }} />
+        <span style={{ fontSize: 11, color: "var(--text-dim)" }}>
+          First winners announced <b style={{ color: "var(--gold)" }}>Jun 12</b> · predict now to enter
+        </span>
+      </div>
+    );
+  }
+
+  const w = winners[i];
   return (
     <div style={{
       display: "flex", alignItems: "center", justifyContent: "space-between",
@@ -335,7 +362,7 @@ const PoolRow = ({ pool, open, onToggle, state, prog, actions }) => {
 
   // Pool-specific subtitle
   const subtitle = {
-    daily:  `Closes ${TODAY_POOL.closesInHours}h · ${TODAY_POOL.matches} matches today`,
+    daily:  TODAY_POOL.matches > 0 ? `Closes ${TODAY_POOL.closesInHours}h · ${TODAY_POOL.matches} matches today` : `First draw Jun 12 · predict now to enter`,
     group:  `${pool.units} groups × $${pool.perUnitBudget} · Group stage`,
     r32:    `${pool.units} fixtures × $${pool.perUnitBudget} · Knockouts begin`,
     r16:    `${pool.units} fixtures × $${pool.perUnitBudget} · Half the field gone`,
