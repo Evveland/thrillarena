@@ -39,8 +39,8 @@ const Onboarding = ({ onStart }) => {
           onClick={onStart}>SKIP →</button>
       </div>
 
-      {/* art */}
-      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
+      {/* art — capped height so copy is always fully visible */}
+      <div style={{ flex: "0 0 auto", height: "38vh", maxHeight: 280, display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
         {s.art === "logo" && (
           <div style={{ position: "relative", textAlign: "center" }}>
             <div style={{
@@ -104,17 +104,17 @@ const Onboarding = ({ onStart }) => {
         )}
       </div>
 
-      {/* copy */}
-      <div style={{ minHeight: 200 }}>
-        <div className="eyebrow" style={{ color: "var(--orange)", marginBottom: 14 }}>{s.eyebrow}</div>
-        <div className="h-big" style={{ marginBottom: 18, whiteSpace: "pre-line" }}>{s.title}</div>
-        <div style={{ color: "var(--text-dim)", fontSize: 16, lineHeight: 1.45, maxWidth: 320 }}>
+      {/* copy — flex so it fills remaining space; scrolls if text is long */}
+      <div style={{ flex: 1, overflowY: "auto", paddingTop: 4 }}>
+        <div className="eyebrow" style={{ color: "var(--orange)", marginBottom: 12 }}>{s.eyebrow}</div>
+        <div className="h-big" style={{ marginBottom: 14, whiteSpace: "pre-line", fontSize: 44 }}>{s.title}</div>
+        <div style={{ color: "var(--text-dim)", fontSize: 15, lineHeight: 1.5, maxWidth: 340 }}>
           {s.body}
         </div>
       </div>
 
-      {/* dots + CTA */}
-      <div style={{ marginTop: 28 }}>
+      {/* dots + CTA — always pinned at bottom */}
+      <div style={{ paddingTop: 16, flexShrink: 0 }}>
         <div style={{ display: "flex", gap: 8, marginBottom: 22 }}>
           {slides.map((_, i) => (
             <div key={i} style={{
@@ -234,12 +234,8 @@ const HomeScreen = ({ state, actions }) => {
             <span className="num" style={{ flexShrink: 0 }}>⏱ {nextMatch.times?.local || "TBD"}</span>
           </div>
 
-          <button className="btn btn-primary" onClick={() => actions.openPredict(nextMatch.id)}>
-            {predictions[nextMatch.id] ? "Change Pick" : "Make Prediction"}
-          </button>
-
-          <div style={{ marginTop: 12, textAlign: "center", fontSize: 12, color: "var(--text-faint)" }}>
-            <>Each pick costs <b style={{ color: "var(--orange)" }}>⚡10</b> · Invite friends for +30 ⚡ each</>
+          <div style={{ fontSize: 12, color: "var(--text-faint)", textAlign: "center", paddingTop: 4 }}>
+            Each pick costs <b style={{ color: "var(--orange)" }}>⚡10</b> · Invite friends for +30 ⚡ each
           </div>
         </div>
       </div>
@@ -280,8 +276,20 @@ const HomeScreen = ({ state, actions }) => {
         </div>
       </div>
 
+      {/* ─── STICKY PREDICT CTA ── always above the nav bar ── */}
+      <div style={{
+        position: "sticky", bottom: 0, zIndex: 10,
+        padding: "12px 20px 12px",
+        background: "linear-gradient(to top, #0A0E1C 70%, transparent)",
+      }}>
+        <button className="btn btn-primary" onClick={() => actions.openPredict(nextMatch.id)}
+          style={{ width: "100%", fontSize: 16 }}>
+          {predictions[nextMatch.id] ? `Change Pick · ${nextMatch.home} vs ${nextMatch.away}` : "Make Prediction"}
+        </button>
+      </div>
+
       {/* mini leaderboard */}
-      <div style={{ padding: "20px 20px 0" }}>
+      <div style={{ padding: "0 20px 0" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 10, gap: 10 }}>
           <div className="eyebrow" style={{ whiteSpace: "nowrap" }}>Live leaderboard</div>
           <button className="btn" onClick={() => actions.goto("leaderboard")}
