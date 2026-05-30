@@ -581,7 +581,7 @@ const InviteShareModal = ({ onClose, onSent }) => {
                 <Icon name="people" size={22} color="var(--orange)" />
               </div>
               <div style={{ flex: 1, minWidth: 0, fontSize: 12, color: "var(--text-dim)", lineHeight: 1.45 }}>
-                Both you and each friend get <b style={{ color: "var(--orange)", fontFamily: "var(--display)" }}>+30 ⚡</b> when they make their first pick.
+                Both you and each friend get <b style={{ color: "var(--orange)", fontFamily: "var(--display)" }}>+20 ⚡</b> as soon as they join.
               </div>
             </div>
 
@@ -698,7 +698,7 @@ const InviteShareModal = ({ onClose, onSent }) => {
             <div className="h-md" style={{ marginBottom: 6 }}>Invites on their way</div>
             <div style={{ fontSize: 12, color: "var(--text-dim)", marginBottom: 14, lineHeight: 1.5 }}>
               {count} friend{count > 1 ? "s" : ""} will get a Telegram message with your link.
-              You'll earn <b style={{ color: "var(--orange)", fontFamily: "var(--display)" }}>⚡30 each</b> on their first pick.
+              You'll earn <b style={{ color: "var(--orange)", fontFamily: "var(--display)" }}>⚡20 each</b> as soon as they join.
             </div>
             <div className="num" style={{
               padding: "6px 12px", display: "inline-block",

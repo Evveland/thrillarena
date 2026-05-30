@@ -2,10 +2,10 @@
 const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
   "primary": "#5DEDA5",
   "accent": "#FF9F1C",
-  "energyPerPick": 1,
+  "energyPerPick": 10,
   "freePicks": 0,
   "tokenName": "USDT",
-  "startingEnergy": 5,
+  "startingEnergy": 20,
   "boostFirstFlow": true
 }/*EDITMODE-END*/;
 
@@ -288,7 +288,7 @@ function App() {
     connectWallet: (w, address) => {
       setWallet({ name: w.name, id: w.id, address });
       setTasksDone(t => ({ ...t, wallet: true }));
-      setEnergy(e => Math.min(200, e + 50));
+      setEnergy(e => Math.min(9999, e + 10));
       // celebratory push
       setTimeout(() => pushNotification({
         title: "TON wallet linked",
@@ -301,24 +301,23 @@ function App() {
     verifyChannel: () => {
       setChannelJoined(true);
       setTasksDone(t => ({ ...t, channel: true }));
-      setEnergy(e => Math.min(200, e + 20));
+      setEnergy(e => Math.min(9999, e + 10));
     },
 
-    // Invites sent — +1 ⚡ instantly per invite opened, +3 ⚡ when friend activates (mocked on send)
+    // Invites sent — +20 ⚡ per friend who opens the link
     addInvites: (count) => {
       setInvitesSent(n => n + count);
       if (count > 0) {
         setTasksDone(t => ({ ...t, invite: true }));
-        // +1 immediately for each invite link opened
-        const instant = count * 1;
-        setEnergy(e => Math.min(999, e + instant));
+        const gained = count * 20;
+        setEnergy(e => Math.min(9999, e + gained));
         if (window.SupaDB && dbUser) {
-          SupaDB.recordEnergy(dbUser.id, "invite_opened", instant, energy + instant);
+          SupaDB.recordEnergy(dbUser.id, "invite_opened", gained, energy + gained);
         }
       }
       pushNotification({
-        title: `${count} invite${count > 1 ? "s" : ""} sent · +${count} ⚡`,
-        body: `+3 ⚡ more when each friend makes their first prediction.`,
+        title: `${count} invite${count > 1 ? "s" : ""} sent · +${count * 20} ⚡`,
+        body: `Each friend who joins gives you +20 ⚡ — enough for 2 more predictions.`,
         kind: "invite",
       });
     },

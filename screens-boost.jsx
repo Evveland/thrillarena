@@ -640,7 +640,7 @@ const BoostThisPickInline = ({ state, actions }) => {
 
 // ─── LOW-ENERGY DEPOSIT PROMPT — inline on Tasks ────────
 const LowEnergyDepositCard = ({ state, actions }) => {
-  if (state.energy > 3) return null;
+  if (state.energy > 20) return null;
   return (
     <div style={{ padding: "0 20px 12px" }}>
       <button className="btn" onClick={() => actions.openInvite()} style={{
@@ -665,7 +665,7 @@ const LowEnergyDepositCard = ({ state, actions }) => {
             <div className="eyebrow" style={{ color: "var(--orange)", marginBottom: 2 }}>Running low on energy</div>
             <div style={{ fontSize: 13, fontWeight: 700 }}>Invite friends to keep predicting</div>
             <div style={{ fontSize: 11, color: "var(--text-dim)", marginTop: 2 }}>
-              +1 ⚡ per invite · +3 ⚡ when they predict
+              +20 ⚡ per friend · 1 invite = 2 more picks
             </div>
           </div>
           <Icon name="arrow" size={20} color="var(--orange)" stroke={2.5} />

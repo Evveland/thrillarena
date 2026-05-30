@@ -114,10 +114,9 @@ const TasksScreen = ({ state, actions }) => {
         }}>
           <Icon name="info" size={16} color="var(--teal)" />
           <div>
-            Each prediction costs <b style={{ color: "var(--orange)" }}>⚡1</b>. Refill by inviting friends:
-            {" "}<b style={{ color: "var(--teal)" }}>+1 ⚡</b> per invite sent,
-            {" "}<b style={{ color: "var(--orange)" }}>+3 ⚡</b> when they make their first pick,
-            {" "}<b style={{ color: "var(--gold)" }}>+5 ⚡</b> when they complete a Thrill task.
+            Each prediction costs <b style={{ color: "var(--orange)" }}>⚡10</b>. You start with <b style={{ color: "var(--teal)" }}>20 ⚡</b> (2 free picks).
+            Invite friends for <b style={{ color: "var(--orange)" }}>+20 ⚡ each</b> — one invite = 2 more predictions.
+            {" "}Join the channel or connect your wallet for a one-time <b style={{ color: "var(--gold)" }}>+10 ⚡</b> each.
           </div>
         </div>
       </div>
@@ -362,8 +361,8 @@ const OutOfEnergyModal = ({ state, actions, onClose }) => {
       icon: "people",
       color: "#FF9F1C",
       title: "Invite a friend",
-      sub: "+1 ⚡ now · +3 ⚡ on their first pick",
-      reward: "+1 ⚡",
+      sub: "+20 ⚡ per friend · enough for 2 more picks",
+      reward: "+20 ⚡",
       action: () => { onClose(); actions.openInvite(); },
     },
     {
@@ -381,7 +380,7 @@ const OutOfEnergyModal = ({ state, actions, onClose }) => {
       color: "#22D3EE",
       title: "Join our channel",
       sub: "@thrill_arena · one-time reward",
-      reward: "+20 ⚡",
+      reward: "+10 ⚡",
       done: state.channelJoined,
       action: () => { onClose(); actions.openChannelVerify(); },
     },
@@ -391,7 +390,7 @@ const OutOfEnergyModal = ({ state, actions, onClose }) => {
       color: "#FFD60A",
       title: "Connect TON wallet",
       sub: "Required for USDT payout",
-      reward: "+50 ⚡",
+      reward: "+10 ⚡",
       done: !!state.wallet,
       action: () => { onClose(); actions.openWalletConnect(); },
     },
