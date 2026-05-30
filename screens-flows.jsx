@@ -506,51 +506,57 @@ const ChannelVerifyModal = ({ onClose, onVerified }) => {
 };
 
 // ─── 3. INVITE / SHARE MODAL ─────────────────────────────
-const REFERRAL_CODE = "ref_y_a7k2x";
-const REFERRAL_LINK = `t.me/ThrillArenaBot?start=${REFERRAL_CODE}`;
-
-const SHARE_CONTACTS = [
-  { name: "Diego",   handle: "@diegokicks",   color: "#A78BFA", glyph: "D", online: true },
-  { name: "Sam",     handle: "@pixelpenalty", color: "#22D3EE", glyph: "S", online: true },
-  { name: "Ana",     handle: "@goalden_era",  color: "#FFD60A", glyph: "A", online: false },
-  { name: "Mateo",   handle: "@chip_shot",    color: "#F472B6", glyph: "M", online: true },
-  { name: "Rey",     handle: "@rabona_rey",   color: "#FF9F1C", glyph: "R", online: false },
-  { name: "Iris",    handle: "@offside.io",   color: "#10B981", glyph: "I", online: true },
-  { name: "Caleb",   handle: "@cleansheet",   color: "#F97316", glyph: "C", online: false },
-  { name: "Priya",   handle: "@nutmeg_pri",   color: "#22D3EE", glyph: "P", online: true },
-];
+// Referral code derived from the real Telegram user ID at runtime.
+// Falls back to a hash of the anonymous session ID in dev/browser mode.
+function getReferralCode() {
+  const tgId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id;
+  if (tgId) return `ref_${tgId}`;
+  // Dev fallback — stable across reloads via localStorage
+  let devCode = localStorage.getItem("ta_dev_ref");
+  if (!devCode) {
+    devCode = `ref_dev_${Math.random().toString(36).slice(2, 8)}`;
+    localStorage.setItem("ta_dev_ref", devCode);
+  }
+  return devCode;
+}
 
 const InviteShareModal = ({ onClose, onSent }) => {
-  const [selected, setSelected] = React.useState({});
-  const [copied, setCopied] = React.useState(false);
-  const [sent, setSent] = React.useState(false);
+  const [copied, setCopied]   = React.useState(false);
+  const [shared, setShared]   = React.useState(false);
 
-  const toggle = (h) => setSelected(s => ({ ...s, [h]: !s[h] }));
-  const count = Object.values(selected).filter(Boolean).length;
+  const refCode   = getReferralCode();
+  const inviteUrl = `https://t.me/thrillarena_bot?start=${refCode}`;
+  const shareText = encodeURIComponent("⚽ Join me on Thrill Arena — predict WC 2026 matches and win from a $20,000 USDT prize pool!");
+  const shareUrl  = `https://t.me/share/url?url=${encodeURIComponent(inviteUrl)}&text=${shareText}`;
 
   const copy = () => {
-    // navigator.clipboard exists in Telegram WebApp; fall back silently in iframe
-    try { navigator.clipboard?.writeText(`https://${REFERRAL_LINK}`); } catch (e) {}
+    try { navigator.clipboard?.writeText(inviteUrl); } catch (e) {}
     setCopied(true);
-    setTimeout(() => setCopied(false), 1600);
+    setTimeout(() => setCopied(false), 1800);
   };
 
-  const send = () => {
-    if (count === 0) return;
-    setSent(true);
-    setTimeout(() => { onSent(count); onClose(); }, 1400);
+  // Opens Telegram's native contact/chat picker
+  const shareViaTelegram = () => {
+    if (window.Telegram?.WebApp?.openTelegramLink) {
+      window.Telegram.WebApp.openTelegramLink(shareUrl);
+    } else {
+      window.open(shareUrl, "_blank");
+    }
+    // Award energy after share action — mark as shared
+    setShared(true);
+    setTimeout(() => { onSent(1); onClose(); }, 1200);
   };
 
   return (
     <div className="modal" onClick={onClose} data-screen-label="invite-share">
-      <div className="modal-sheet" onClick={e => e.stopPropagation()} style={{ maxHeight: "92%" }}>
+      <div className="modal-sheet" onClick={e => e.stopPropagation()} style={{ paddingBottom: 28 }}>
         <div className="modal-handle" />
 
         {/* header */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16, gap: 12 }}>
-          <div style={{ minWidth: 0, flex: 1 }}>
-            <div className="eyebrow" style={{ color: "var(--orange)", marginBottom: 8, whiteSpace: "nowrap" }}>Bring friends</div>
-            <div className="h-lg">Invite to Thrill</div>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20, gap: 12 }}>
+          <div>
+            <div className="eyebrow" style={{ color: "var(--orange)", marginBottom: 8 }}>Bring friends</div>
+            <div className="h-lg">Invite to Thrill Arena</div>
           </div>
           <button className="btn" onClick={onClose} style={{
             width: 36, height: 36, borderRadius: 999, flexShrink: 0,
@@ -561,154 +567,78 @@ const InviteShareModal = ({ onClose, onSent }) => {
           </button>
         </div>
 
-        {!sent ? (
-          <>
-            {/* Reward summary */}
-            <div style={{
-              padding: "14px 16px", marginBottom: 14,
-              borderRadius: 14,
-              background: `
-                radial-gradient(120% 80% at 100% 0%, rgba(255,159,28,0.2), transparent 60%),
-                linear-gradient(135deg, #232844, #1A2038)`,
-              border: "1px solid rgba(255,159,28,0.3)",
-              display: "flex", alignItems: "center", gap: 12,
-            }}>
-              <div style={{
-                width: 44, height: 44, borderRadius: 12, flexShrink: 0,
-                background: "rgba(255,159,28,0.18)",
-                display: "flex", alignItems: "center", justifyContent: "center",
-              }}>
-                <Icon name="people" size={22} color="var(--orange)" />
-              </div>
-              <div style={{ flex: 1, minWidth: 0, fontSize: 12, color: "var(--text-dim)", lineHeight: 1.45 }}>
-                Both you and each friend get <b style={{ color: "var(--orange)", fontFamily: "var(--display)" }}>+20 ⚡</b> as soon as they join.
-              </div>
+        {/* Reward summary */}
+        <div style={{
+          padding: "14px 16px", marginBottom: 20,
+          borderRadius: 14,
+          background: "linear-gradient(135deg, rgba(255,159,28,0.12), rgba(255,159,28,0.04))",
+          border: "1px solid rgba(255,159,28,0.3)",
+          display: "flex", alignItems: "center", gap: 12,
+        }}>
+          <BoltIcon size={28} color="var(--orange)" />
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 2 }}>
+              You get <span className="num" style={{ color: "var(--orange)", fontFamily: "var(--display)" }}>+30 ⚡</span> per friend who joins
             </div>
-
-            {/* Referral link */}
-            <div className="eyebrow" style={{ marginBottom: 8 }}>Your invite link</div>
-            <div style={{
-              display: "flex", gap: 8, marginBottom: 16,
-            }}>
-              <div className="num" style={{
-                flex: 1, minWidth: 0,
-                padding: "12px 14px",
-                background: "var(--card)",
-                border: "1px solid var(--line-soft)",
-                borderRadius: 12,
-                fontFamily: "var(--mono)", fontSize: 12,
-                color: "var(--text)",
-                overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                display: "flex", alignItems: "center",
-              }}>{REFERRAL_LINK}</div>
-              <button className="btn" onClick={copy} style={{
-                padding: "0 16px", flexShrink: 0,
-                background: copied ? "var(--teal)" : "var(--card)",
-                color: copied ? "#0A0E1C" : "var(--teal)",
-                border: `1px solid ${copied ? "var(--teal)" : "rgba(93,237,165,0.4)"}`,
-                borderRadius: 12, fontSize: 12, fontWeight: 700,
-                letterSpacing: "0.06em", textTransform: "uppercase",
-                display: "flex", alignItems: "center", gap: 6,
-              }}>
-                {copied ? <><Icon name="check" size={14} stroke={3} /> Copied</> : "Copy"}
-              </button>
+            <div style={{ fontSize: 11, color: "var(--text-dim)" }}>
+              That's 3 more predictions for every invite
             </div>
-
-            {/* Telegram contacts */}
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
-              <div className="eyebrow">Send to Telegram contacts</div>
-              <div style={{ fontSize: 10, color: "var(--text-faint)", letterSpacing: "0.06em" }}>
-                {count > 0 ? `${count} selected` : "Tap to select"}
-              </div>
-            </div>
-
-            <div style={{
-              display: "grid", gridTemplateColumns: "1fr 1fr",
-              gap: 6,
-              maxHeight: 220, overflowY: "auto",
-              padding: 4,
-              marginBottom: 14,
-              background: "rgba(0,0,0,0.18)",
-              border: "1px solid var(--line-soft)",
-              borderRadius: 12,
-            }}>
-              {SHARE_CONTACTS.map(c => {
-                const sel = !!selected[c.handle];
-                return (
-                  <button key={c.handle} className="btn" onClick={() => toggle(c.handle)} style={{
-                    display: "flex", alignItems: "center", gap: 8,
-                    padding: "8px 10px",
-                    background: sel ? "rgba(93,237,165,0.12)" : "transparent",
-                    border: `1px solid ${sel ? "rgba(93,237,165,0.4)" : "transparent"}`,
-                    borderRadius: 10,
-                    textAlign: "left",
-                  }}>
-                    <div style={{ position: "relative", flexShrink: 0 }}>
-                      <div style={{
-                        width: 30, height: 30, borderRadius: 999,
-                        background: c.color, color: "#0A0E1C",
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                        fontFamily: "var(--display)", fontSize: 13,
-                      }}>{c.glyph}</div>
-                      {c.online && (
-                        <div style={{
-                          position: "absolute", right: -1, bottom: -1,
-                          width: 9, height: 9, borderRadius: "50%",
-                          background: "#5DEDA5", border: "2px solid #131829",
-                        }} />
-                      )}
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 12, fontWeight: 600, color: sel ? "var(--teal)" : "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.name}</div>
-                      <div style={{ fontSize: 9, color: "var(--text-faint)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.handle}</div>
-                    </div>
-                    {sel && <Icon name="check" size={14} color="var(--teal)" stroke={3} />}
-                  </button>
-                );
-              })}
-            </div>
-
-            <button className="btn btn-primary" disabled={count === 0} onClick={send}
-              style={{ opacity: count === 0 ? 0.5 : 1 }}>
-              {count === 0 ? "Pick contacts to invite" : `Send ${count} invite${count > 1 ? "s" : ""} →`}
-            </button>
-
-            <div style={{ marginTop: 10, fontSize: 11, color: "var(--text-faint)", textAlign: "center" }}>
-              or share to a chat outside Telegram via the link above
-            </div>
-          </>
-        ) : (
-          // SENT SUCCESS
-          <div style={{
-            padding: "32px 20px",
-            background: `
-              radial-gradient(80% 60% at 50% 0%, rgba(255,159,28,0.18), transparent 70%),
-              var(--card)`,
-            border: "1px solid rgba(255,159,28,0.3)",
-            borderRadius: 18,
-            textAlign: "center",
-          }}>
-            <div style={{
-              width: 64, height: 64, borderRadius: 999, margin: "0 auto 14px",
-              background: "var(--orange)", color: "#0A0E1C",
-              display: "flex", alignItems: "center", justifyContent: "center",
-            }}>
-              <Icon name="people" size={32} stroke={2.5} />
-            </div>
-            <div className="h-md" style={{ marginBottom: 6 }}>Invites on their way</div>
-            <div style={{ fontSize: 12, color: "var(--text-dim)", marginBottom: 14, lineHeight: 1.5 }}>
-              {count} friend{count > 1 ? "s" : ""} will get a Telegram message with your link.
-              You'll earn <b style={{ color: "var(--orange)", fontFamily: "var(--display)" }}>⚡20 each</b> as soon as they join.
-            </div>
-            <div className="num" style={{
-              padding: "6px 12px", display: "inline-block",
-              background: "rgba(255,159,28,0.12)",
-              border: "1px solid rgba(255,159,28,0.3)",
-              borderRadius: 999,
-              fontFamily: "var(--display)", fontSize: 14, color: "var(--orange)",
-            }}>Pending: +{count * 30} ⚡</div>
           </div>
-        )}
+        </div>
+
+        {/* Primary CTA — native Telegram share sheet */}
+        <button
+          className="btn btn-primary"
+          onClick={shareViaTelegram}
+          style={{
+            display: "flex", alignItems: "center", justifyContent: "center",
+            gap: 10, marginBottom: 12, fontSize: 15,
+          }}
+        >
+          {/* Telegram paper-plane icon */}
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M22 2L11 13"/><path d="M22 2L15 22 11 13 2 9l20-7z"/>
+          </svg>
+          Share via Telegram
+        </button>
+
+        {/* Divider */}
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+          <div style={{ flex: 1, height: 1, background: "var(--line-soft)" }} />
+          <div style={{ fontSize: 11, color: "var(--text-faint)", letterSpacing: "0.06em" }}>OR COPY LINK</div>
+          <div style={{ flex: 1, height: 1, background: "var(--line-soft)" }} />
+        </div>
+
+        {/* Referral link */}
+        <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+          <div style={{
+            flex: 1, minWidth: 0,
+            padding: "12px 14px",
+            background: "var(--card)",
+            border: "1px solid var(--line-soft)",
+            borderRadius: 12,
+            fontFamily: "var(--mono)", fontSize: 11,
+            color: "var(--text-dim)",
+            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+            display: "flex", alignItems: "center",
+          }}>
+            {inviteUrl.replace("https://", "")}
+          </div>
+          <button className="btn" onClick={copy} style={{
+            padding: "0 16px", flexShrink: 0,
+            background: copied ? "var(--teal)" : "var(--card)",
+            color: copied ? "#0A0E1C" : "var(--teal)",
+            border: `1px solid ${copied ? "var(--teal)" : "rgba(93,237,165,0.4)"}`,
+            borderRadius: 12, fontSize: 12, fontWeight: 700,
+            letterSpacing: "0.06em", textTransform: "uppercase",
+            display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap",
+          }}>
+            {copied ? <><Icon name="check" size={14} stroke={3} /> Copied!</> : "Copy"}
+          </button>
+        </div>
+        <div style={{ fontSize: 11, color: "var(--text-faint)", textAlign: "center" }}>
+          Paste anywhere — WhatsApp, email, or any chat
+        </div>
       </div>
     </div>
   );
