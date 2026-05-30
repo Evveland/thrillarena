@@ -11,7 +11,7 @@ const Onboarding = ({ onStart }) => {
     {
       eyebrow: "Energy → Picks",
       title: "Invite friends,\nkeep predicting.",
-      body: "Each prediction costs ⚡10 energy. You start with 20 ⚡ — enough for 2 picks. Invite friends for +20 ⚡ each and keep predicting all tournament.",
+      body: "Each prediction costs ⚡10 energy. You start with 20 ⚡ — enough for 2 picks. Invite friends for +30 ⚡ each, or register on Thrill for a one-time +30 ⚡ bonus.",
       art: "bolt",
     },
     {
@@ -239,7 +239,7 @@ const HomeScreen = ({ state, actions }) => {
           </button>
 
           <div style={{ marginTop: 12, textAlign: "center", fontSize: 12, color: "var(--text-faint)" }}>
-            <>Each pick costs <b style={{ color: "var(--orange)" }}>⚡10</b> · Invite friends for +20 ⚡ each</>
+            <>Each pick costs <b style={{ color: "var(--orange)" }}>⚡10</b> · Invite friends for +30 ⚡ each</>
           </div>
         </div>
       </div>

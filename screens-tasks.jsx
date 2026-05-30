@@ -114,9 +114,10 @@ const TasksScreen = ({ state, actions }) => {
         }}>
           <Icon name="info" size={16} color="var(--teal)" />
           <div>
-            Each prediction costs <b style={{ color: "var(--orange)" }}>⚡10</b>. You start with <b style={{ color: "var(--teal)" }}>20 ⚡</b> (2 free picks).
-            Invite friends for <b style={{ color: "var(--orange)" }}>+20 ⚡ each</b> — one invite = 2 more predictions.
-            {" "}Join the channel or connect your wallet for a one-time <b style={{ color: "var(--gold)" }}>+10 ⚡</b> each.
+            Each prediction costs <b style={{ color: "var(--orange)" }}>⚡10</b>. You start with <b style={{ color: "var(--teal)" }}>20 ⚡</b> (2 picks).
+            Invite friends for <b style={{ color: "var(--orange)" }}>+30 ⚡ each</b> — 1 invite = 3 more picks.
+            Register on Thrill for a one-time <b style={{ color: "var(--orange)" }}>+30 ⚡</b>.
+            {" "}Channel + wallet each give <b style={{ color: "var(--gold)" }}>+10 ⚡</b>.
           </div>
         </div>
       </div>
@@ -361,8 +362,8 @@ const OutOfEnergyModal = ({ state, actions, onClose }) => {
       icon: "people",
       color: "#FF9F1C",
       title: "Invite a friend",
-      sub: "+20 ⚡ per friend · enough for 2 more picks",
-      reward: "+20 ⚡",
+      sub: "+30 ⚡ per friend · enough for 3 more picks",
+      reward: "+30 ⚡",
       action: () => { onClose(); actions.openInvite(); },
     },
     {
@@ -468,4 +469,81 @@ const OutOfEnergyModal = ({ state, actions, onClose }) => {
   );
 };
 
-Object.assign(window, { TasksScreen, CasinoScreen, OutOfEnergyModal });
+// ─── THRILL REGISTER MODAL ───────────────────────────────
+const ThrillRegisterModal = ({ done, onClose, onClaim }) => (
+  <div className="modal" onClick={onClose}>
+    <div className="modal-sheet" onClick={e => e.stopPropagation()} style={{ paddingBottom: 28 }}>
+      <div className="modal-handle" />
+
+      {/* header */}
+      <div style={{ textAlign: "center", padding: "8px 0 24px" }}>
+        <div style={{
+          width: 64, height: 64, borderRadius: "50%", margin: "0 auto 16px",
+          background: "radial-gradient(circle, rgba(255,159,28,0.25), rgba(255,159,28,0.06))",
+          border: "1px solid rgba(255,159,28,0.35)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+        }}>
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--orange)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M13 2 L4 14 H10 L9 22 L20 9 H13 L15 2 Z" fill="rgba(255,159,28,0.2)" />
+          </svg>
+        </div>
+        <div className="eyebrow" style={{ color: "var(--orange)", marginBottom: 8 }}>One-time bonus</div>
+        <div className="h-lg" style={{ marginBottom: 8 }}>Register on Thrill</div>
+        <div style={{ fontSize: 13, color: "var(--text-dim)", lineHeight: 1.5, maxWidth: 280, margin: "0 auto" }}>
+          Create a free account on Thrill Casino to unlock <b style={{ color: "var(--orange)" }}>+30 ⚡</b> — enough for 3 more predictions.
+        </div>
+      </div>
+
+      {/* reward chip */}
+      <div style={{
+        display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
+        padding: "14px 20px", marginBottom: 20,
+        borderRadius: 16,
+        background: "rgba(255,159,28,0.08)",
+        border: "1px solid rgba(255,159,28,0.3)",
+      }}>
+        <BoltIcon size={22} color="var(--orange)" />
+        <div className="num" style={{ fontFamily: "var(--display)", fontSize: 28, color: "var(--orange)" }}>+30 ⚡</div>
+        <div style={{ fontSize: 12, color: "var(--text-dim)" }}>one-time reward</div>
+      </div>
+
+      {done ? (
+        <div style={{
+          textAlign: "center", padding: "14px", borderRadius: 14,
+          background: "rgba(93,237,165,0.08)", border: "1px solid rgba(93,237,165,0.25)",
+          color: "var(--teal)", fontSize: 13, fontWeight: 700, marginBottom: 12,
+        }}>
+          ✓ Already claimed
+        </div>
+      ) : (
+        <>
+          <a
+            href="https://thrill.com/register"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn btn-primary"
+            style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 10, textDecoration: "none" }}
+          >
+            Register on Thrill <Icon name="arrow" size={16} stroke={2.5} />
+          </a>
+          <button className="btn" onClick={onClaim} style={{
+            width: "100%", height: 44,
+            color: "var(--teal)", fontSize: 13, fontWeight: 700,
+            border: "1px solid rgba(93,237,165,0.3)", borderRadius: 14,
+          }}>
+            I've registered — claim +30 ⚡
+          </button>
+        </>
+      )}
+
+      <button className="btn" onClick={onClose} style={{
+        width: "100%", height: 40, marginTop: 8,
+        color: "var(--text-faint)", fontSize: 12,
+      }}>
+        Close
+      </button>
+    </div>
+  </div>
+);
+
+Object.assign(window, { TasksScreen, CasinoScreen, OutOfEnergyModal, ThrillRegisterModal });

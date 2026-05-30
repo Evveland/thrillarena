@@ -242,17 +242,17 @@ function App() {
       if (!task) return;
 
       // Route by task type → flow modal
-      if (task.type === "wallet") return setModal({ type: "wallet" });
-      if (task.type === "channel") return setModal({ type: "channel" });
-      if (task.type === "invite") return setModal({ type: "invite" });
-      if (task.type === "spin") return setModal({ type: "casino" });
+      if (task.type === "wallet")           return setModal({ type: "wallet" });
+      if (task.type === "channel")          return setModal({ type: "channel" });
+      if (task.type === "invite")           return setModal({ type: "invite" });
+      if (task.type === "spin")             return setModal({ type: "casino" });
+      if (task.type === "thrill_register")  return setModal({ type: "thrill-register" });
 
-      // Default (ad, etc.): instant reward
+      // Default: instant reward
       const m = task.reward.match(/(\d+)/);
       const amount = m ? +m[1] : 5;
       setTasksDone(t => ({ ...t, [id]: true }));
-      setEnergy(e => Math.min(200, e + amount));
-      // Thrill task completion bumps the daily pool gate + earns a raffle ticket.
+      setEnergy(e => Math.min(9999, e + amount));
       actions.recordThrillTaskCompleted();
     },
 
@@ -304,20 +304,20 @@ function App() {
       setEnergy(e => Math.min(9999, e + 10));
     },
 
-    // Invites sent — +20 ⚡ per friend who opens the link
+    // Invites sent — +30 ⚡ per friend who opens the link
     addInvites: (count) => {
       setInvitesSent(n => n + count);
       if (count > 0) {
         setTasksDone(t => ({ ...t, invite: true }));
-        const gained = count * 20;
+        const gained = count * 30;
         setEnergy(e => Math.min(9999, e + gained));
         if (window.SupaDB && dbUser) {
           SupaDB.recordEnergy(dbUser.id, "invite_opened", gained, energy + gained);
         }
       }
       pushNotification({
-        title: `${count} invite${count > 1 ? "s" : ""} sent · +${count * 20} ⚡`,
-        body: `Each friend who joins gives you +20 ⚡ — enough for 2 more predictions.`,
+        title: `${count} invite${count > 1 ? "s" : ""} sent · +${count * 30} ⚡`,
+        body: `Each friend who joins gives you +30 ⚡ — enough for 3 more predictions.`,
         kind: "invite",
       });
     },
@@ -593,6 +593,22 @@ function App() {
       )}
       {modal?.type === "out-of-energy" && (
         <OutOfEnergyModal state={state} actions={actions} onClose={() => setModal(null)} />
+      )}
+      {modal?.type === "thrill-register" && (
+        <ThrillRegisterModal
+          done={tasksDone["thrill_register"]}
+          onClose={() => setModal(null)}
+          onClaim={() => {
+            setTasksDone(t => ({ ...t, thrill_register: true }));
+            setEnergy(e => Math.min(9999, e + 30));
+            if (window.SupaDB && dbUser) {
+              SupaDB.saveTask(dbUser.id, "thrill_registration");
+              SupaDB.recordEnergy(dbUser.id, "referral_activated", 30, energy + 30, { notes: "thrill_register" });
+            }
+            setModal(null);
+            pushNotification({ title: "Registered on Thrill · +30 ⚡", body: "3 more predictions unlocked. Good luck!", kind: "boost" });
+          }}
+        />
       )}
 
       {/* Tweaks panel (always rendered — manages its own open state via host protocol) */}

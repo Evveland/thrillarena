@@ -665,7 +665,7 @@ const LowEnergyDepositCard = ({ state, actions }) => {
             <div className="eyebrow" style={{ color: "var(--orange)", marginBottom: 2 }}>Running low on energy</div>
             <div style={{ fontSize: 13, fontWeight: 700 }}>Invite friends to keep predicting</div>
             <div style={{ fontSize: 11, color: "var(--text-dim)", marginTop: 2 }}>
-              +20 ⚡ per friend · 1 invite = 2 more picks
+              +30 ⚡ per friend · 1 invite = 3 more picks
             </div>
           </div>
           <Icon name="arrow" size={20} color="var(--orange)" stroke={2.5} />

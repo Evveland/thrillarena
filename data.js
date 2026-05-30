@@ -14,10 +14,11 @@ const ALL_MATCHES = [...groupMatches, ...R32, ...R16, ...QF, ...SF, ...THIRD, ..
 
 // ─── TASKS ────────────────────────────────────────────────
 const TASKS = [
-  { id: "spin",    title: "Daily Spin",             sub: "Spin to earn up to ⚡50",         reward: "1–50 ⚡",    cooldown: "Ready", type: "spin",    primary: true, icon: "wheel" },
-  { id: "invite",  title: "Invite a friend",        sub: "0 of 5 invited",                  reward: "+20 ⚡ each",cooldown: "Open",  type: "invite",  icon: "people" },
-  { id: "channel", title: "Join Telegram channel",  sub: "@thrill_arena",                   reward: "+10 ⚡",     cooldown: "Once",  type: "channel", icon: "telegram" },
-  { id: "wallet",  title: "Connect TON wallet",     sub: "Required for USDT payout",        reward: "+10 ⚡",     cooldown: "Once",  type: "wallet",  icon: "wallet" },
+  { id: "spin",             title: "Daily Spin",             sub: "Spin to earn up to ⚡50",         reward: "1–50 ⚡",    cooldown: "Ready", type: "spin",             primary: true, icon: "wheel"    },
+  { id: "invite",           title: "Invite a friend",        sub: "0 of 5 invited",                  reward: "+30 ⚡ each",cooldown: "Open",  type: "invite",                         icon: "people"   },
+  { id: "thrill_register",  title: "Register on Thrill",     sub: "Create your free casino account", reward: "+30 ⚡",     cooldown: "Once",  type: "thrill_register",                icon: "bolt"     },
+  { id: "channel",          title: "Join Telegram channel",  sub: "@thrill_arena",                   reward: "+10 ⚡",     cooldown: "Once",  type: "channel",                        icon: "telegram" },
+  { id: "wallet",           title: "Connect TON wallet",     sub: "Required for USDT payout",        reward: "+10 ⚡",     cooldown: "Once",  type: "wallet",                         icon: "wallet"   },
 ];
 
 // ─── LEADERBOARDS ─────────────────────────────────────────
