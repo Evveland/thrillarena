@@ -86,14 +86,20 @@ function App() {
         const user = await SupaDB.initUser();
         console.log("[App] user initialised:", user?.id, "telegram:", user?.telegram_id);
         setDbUser(user);
-        const saved = await SupaDB.loadUserState(user.id);
+        const [saved, referralCount] = await Promise.all([
+          SupaDB.loadUserState(user.id),
+          SupaDB.getReferralCount(user.id),
+        ]);
         if (saved.predictions && Object.keys(saved.predictions).length > 0) {
           setPredictions(saved.predictions);
           setPicksMade(Object.keys(saved.predictions).length);
         }
-        if (user.energy_balance != null && user.energy_balance !== 30) {
+        // Always sync energy from DB (includes referral rewards earned while offline)
+        if (user.energy_balance != null) {
           setEnergy(user.energy_balance);
         }
+        // Set real invite count from DB
+        setInvitesSent(referralCount);
         if (saved.lifetimeDeposited > 0) {
           setBoostRaw(b => ({
             ...b,
@@ -313,20 +319,16 @@ function App() {
       setEnergy(e => Math.min(9999, e + 10));
     },
 
-    // Invites sent — +30 ⚡ per friend who opens the link
+    // Invites sent — energy is awarded when the friend actually joins (DB trigger).
+    // No immediate energy grant here.
     addInvites: (count) => {
       setInvitesSent(n => n + count);
       if (count > 0) {
         setTasksDone(t => ({ ...t, invite: true }));
-        const gained = count * 30;
-        setEnergy(e => Math.min(9999, e + gained));
-        if (window.SupaDB && dbUser) {
-          SupaDB.recordEnergy(dbUser.id, "invite_opened", gained, energy + gained);
-        }
       }
       pushNotification({
-        title: `${count} invite${count > 1 ? "s" : ""} sent · +${count * 30} ⚡`,
-        body: `Each friend who joins gives you +30 ⚡ — enough for 3 more predictions.`,
+        title: `${count} invite${count > 1 ? "s" : ""} sent`,
+        body: `+30 ⚡ credited as soon as each friend opens the app.`,
         kind: "invite",
       });
     },

@@ -89,29 +89,51 @@
   }
 
   // ── User init ─────────────────────────────────────────────
+  // First-time users: INSERT with referred_by (triggers referral energy).
+  // Returning users: UPDATE only name fields — never overwrite referred_by.
   async function initUser() {
     const auth = await authenticateWithTelegram();
+    const telegramId = auth.telegramId
+      ?? -(Math.abs(parseInt(auth.userId.replace(/-/g, "").slice(0, 8), 16)));
 
+    // Try INSERT first (new user)
+    const { data: inserted, error: insertErr } = await db
+      .from("users")
+      .insert({
+        id:           auth.userId,
+        telegram_id:  telegramId,
+        username:     auth.username    ?? null,
+        display_name: auth.displayName ?? null,
+        referred_by:  auth.referredBy  ?? null,  // triggers energy award on referrer
+      })
+      .select()
+      .single();
+
+    if (!insertErr) {
+      console.log("[SupaDB] new user created, referredBy:", auth.referredBy);
+      return inserted;
+    }
+
+    // User already exists → update name fields only
     const { data, error } = await db
       .from("users")
-      .upsert(
-        {
-          id:           auth.userId,
-          telegram_id:  auth.telegramId
-                          ?? -(Math.abs(parseInt(auth.userId.replace(/-/g, "").slice(0, 8), 16))),
-          username:     auth.username    ?? null,
-          display_name: auth.displayName ?? null,
-        },
-        { onConflict: "id" }
-      )
+      .update({ username: auth.username ?? null, display_name: auth.displayName ?? null })
+      .eq("id", auth.userId)
       .select()
       .single();
 
     if (error) {
-      console.warn("[SupaDB] user upsert error:", error.message, error.code);
-      return { id: auth.userId, telegram_id: auth.telegramId, energy_balance: 5 };
+      console.warn("[SupaDB] user update error:", error.message);
+      return { id: auth.userId, telegram_id: telegramId, energy_balance: 20 };
     }
     return data;
+  }
+
+  // ── Referral count ────────────────────────────────────────
+  async function getReferralCount(userId) {
+    const { data, error } = await db.rpc("get_referral_count", { p_user_id: userId });
+    if (error) console.warn("[SupaDB] referral count:", error.message);
+    return Number(data?.[0]?.referral_count ?? 0);
   }
 
   // ── Load user state ───────────────────────────────────────
@@ -221,5 +243,6 @@
     saveDeposit,
     saveTask,
     loadLeaderboard,
+    getReferralCount,
   };
 })();

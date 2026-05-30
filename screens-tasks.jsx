@@ -98,19 +98,26 @@ const TasksScreen = ({ state, actions }) => {
         <div className="eyebrow" style={{ marginBottom: 10 }}>More ways to earn</div>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {TASKS.slice(1).map(t => {
-            // Dynamic subline based on flow state
             let sub = t.sub;
+            let overrideDone = tasksDone[t.id];
+            let overrideReward = t.reward;
             if (t.id === "wallet" && state.wallet) {
               sub = `${state.wallet.name} · ${state.wallet.address.slice(0,4)}…${state.wallet.address.slice(-4)}`;
             } else if (t.id === "channel" && state.channelJoined) {
               sub = "✓ Joined @thrill_arena";
             } else if (t.id === "invite") {
-              sub = `${state.invitesSent} of 5 invited`;
+              const joined = state.invitesSent || 0;
+              sub = joined === 0
+                ? "Credited when friend opens the app"
+                : `${joined} friend${joined > 1 ? "s" : ""} joined · +${joined * 30} ⚡ earned`;
+              overrideDone = false;
+              overrideReward = "+30 ⚡ each";
             }
             return (
               <TaskRow
-                key={t.id} task={{ ...t, sub }}
-                done={tasksDone[t.id]}
+                key={t.id}
+                task={{ ...t, sub, reward: overrideReward }}
+                done={overrideDone}
                 onClick={() => actions.doTask(t.id)}
               />
             );
@@ -444,7 +451,7 @@ const OutOfEnergyModal = ({ state, actions, onClose }) => {
       icon: "people",
       color: "#FF9F1C",
       title: "Invite a friend",
-      sub: "+30 ⚡ per friend · enough for 3 more picks",
+      sub: "Credited when friend opens the app",
       reward: "+30 ⚡",
       action: () => { onClose(); actions.openInvite(); },
     },

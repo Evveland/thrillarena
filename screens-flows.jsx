@@ -573,16 +573,29 @@ const InviteShareModal = ({ onClose, onSent }) => {
           borderRadius: 14,
           background: "linear-gradient(135deg, rgba(255,159,28,0.12), rgba(255,159,28,0.04))",
           border: "1px solid rgba(255,159,28,0.3)",
-          display: "flex", alignItems: "center", gap: 12,
         }}>
-          <BoltIcon size={28} color="var(--orange)" />
-          <div>
-            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 2 }}>
-              You get <span className="num" style={{ color: "var(--orange)", fontFamily: "var(--display)" }}>+30 ⚡</span> per friend who joins
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
+            <BoltIcon size={28} color="var(--orange)" />
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 2 }}>
+                +<span className="num" style={{ color: "var(--orange)", fontFamily: "var(--display)" }}>30 ⚡</span> when your friend opens the app
+              </div>
+              <div style={{ fontSize: 11, color: "var(--text-dim)" }}>
+                Energy is credited automatically — no action needed
+              </div>
             </div>
-            <div style={{ fontSize: 11, color: "var(--text-dim)" }}>
-              That's 3 more predictions for every invite
-            </div>
+          </div>
+          {/* Pending counter */}
+          <div style={{
+            display: "flex", alignItems: "center", gap: 8,
+            padding: "8px 12px", borderRadius: 10,
+            background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,159,28,0.2)",
+            fontSize: 12, color: "var(--text-dim)",
+          }}>
+            <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--orange)", animation: "boostPulse 1.4s ease-in-out infinite" }} />
+            <span>
+              <b className="num" style={{ color: "var(--orange)" }}>0</b> friends joined so far · energy credited instantly on their first open
+            </span>
           </div>
         </div>
 

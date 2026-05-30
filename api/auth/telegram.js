@@ -115,6 +115,16 @@ module.exports = async function handler(req, res) {
   const userId     = telegramIdToUUID(telegramId);
   const now        = Math.floor(Date.now() / 1000);
 
+  // Parse referral code from start_param (e.g. "ref_123456789")
+  const startParam = params.get("start_param") || "";
+  let referredByUUID = null;
+  if (startParam.startsWith("ref_")) {
+    const referrerId = startParam.slice(4);
+    if (/^\d+$/.test(referrerId) && referrerId !== String(telegramId)) {
+      referredByUUID = telegramIdToUUID(Number(referrerId));
+    }
+  }
+
   // Sign a Supabase JWT — auth.uid() in RLS returns `sub`
   const jwt = signJWT(
     {
@@ -135,7 +145,8 @@ module.exports = async function handler(req, res) {
     jwt,
     userId,
     telegramId,
-    username:    tgUser.username    || null,
-    displayName: tgUser.first_name  || null,
+    username:     tgUser.username   || null,
+    displayName:  tgUser.first_name || null,
+    referredBy:   referredByUUID,
   });
 };
