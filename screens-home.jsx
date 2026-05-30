@@ -39,21 +39,21 @@ const Onboarding = ({ onStart }) => {
           onClick={onStart}>SKIP →</button>
       </div>
 
-      {/* art — capped height so copy is always fully visible */}
-      <div style={{ flex: "0 0 auto", height: "38vh", maxHeight: 280, display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
+      {/* art — small fixed height so copy always fits */}
+      <div style={{ flex: "0 0 auto", height: "28vh", maxHeight: 200, display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
         {s.art === "logo" && (
           <div style={{ position: "relative", textAlign: "center" }}>
             <div style={{
-              position: "absolute", inset: -40, borderRadius: "50%",
+              position: "absolute", inset: -20, borderRadius: "50%",
               background: "radial-gradient(circle, rgba(93,237,165,0.35), transparent 65%)",
-              filter: "blur(24px)",
+              filter: "blur(18px)",
             }} />
-            <div style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "center", gap: 20 }}>
-              <ThrillWordmark size={84} />
-              <ThrillMark size={92} />
+            <div style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+              <ThrillWordmark size={56} />
+              <ThrillMark size={62} />
               <div style={{
                 fontFamily: "var(--display)",
-                fontSize: 28,
+                fontSize: 20,
                 letterSpacing: "0.08em",
                 color: "#5DEDA5",
                 textTransform: "uppercase",
@@ -64,11 +64,11 @@ const Onboarding = ({ onStart }) => {
         {s.art === "bolt" && (
           <div style={{ position: "relative" }}>
             <div style={{
-              position: "absolute", inset: -40, borderRadius: "50%",
+              position: "absolute", inset: -20, borderRadius: "50%",
               background: "radial-gradient(circle, rgba(255,159,28,0.4), transparent 65%)",
-              filter: "blur(20px)",
+              filter: "blur(16px)",
             }} />
-            <svg width="180" height="220" viewBox="0 0 180 220">
+            <svg width="90" height="110" viewBox="0 0 180 220">
               <defs>
                 <linearGradient id="boltGrad" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0" stopColor="#FFE76E" />
@@ -83,11 +83,11 @@ const Onboarding = ({ onStart }) => {
         {s.art === "coin" && (
           <div style={{ position: "relative" }}>
             <div style={{
-              position: "absolute", inset: -40, borderRadius: "50%",
+              position: "absolute", inset: -20, borderRadius: "50%",
               background: "radial-gradient(circle, rgba(93,237,165,0.4), transparent 65%)",
-              filter: "blur(24px)",
+              filter: "blur(18px)",
             }} />
-            <svg width="200" height="200" viewBox="0 0 200 200">
+            <svg width="120" height="120" viewBox="0 0 200 200">
               <defs>
                 <linearGradient id="bigCoin" x1="0" y1="0" x2="1" y2="1">
                   <stop offset="0" stopColor="#9DFFD5" />
