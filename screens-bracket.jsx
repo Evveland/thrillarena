@@ -482,6 +482,11 @@ const PredictModal = ({ matchId, state, actions, onClose }) => {
   const cost = isFree ? 0 : energyPerPick;
   const canConfirm = pick && home.resolved && away.resolved && (isFree || energy >= cost);
 
+  // Confidence → base ticket yield for this prediction
+  const confidenceTickets = confidence < 65 ? 1 : confidence < 80 ? 2 : 3;
+  const boostMult = state.boost?.multiplier || 1;
+  const effectiveTickets = confidenceTickets * boostMult;
+
   return (
     <div className="modal" onClick={onClose}>
       <div className="modal-sheet" onClick={e => e.stopPropagation()}>
@@ -562,20 +567,54 @@ const PredictModal = ({ matchId, state, actions, onClose }) => {
         {/* Confidence */}
         {(home.resolved && away.resolved) && (
           <div className="card" style={{ padding: 16, marginBottom: 16 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-              <div className="eyebrow">Confidence boost</div>
-              <div className="num" style={{ fontFamily: "var(--display)", fontSize: 18 }}>{confidence}%</div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+              <div>
+                <div className="eyebrow" style={{ marginBottom: 2 }}>Confidence</div>
+                <div style={{ fontSize: 11, color: "var(--text-faint)" }}>
+                  Affects raffle tickets if correct
+                </div>
+              </div>
+              <div style={{ textAlign: "right" }}>
+                <div className="num" style={{ fontFamily: "var(--display)", fontSize: 22 }}>{confidence}%</div>
+                <div style={{ fontSize: 10, color: "var(--text-faint)", letterSpacing: "0.06em", textTransform: "uppercase", marginTop: 2 }}>
+                  {confidence < 65 ? "Low" : confidence < 80 ? "Medium" : "High"}
+                </div>
+              </div>
             </div>
             <input type="range" min="50" max="100" value={confidence}
               onChange={e => setConfidence(+e.target.value)}
               style={{
                 width: "100%", appearance: "none", height: 6, borderRadius: 3,
                 background: `linear-gradient(90deg, var(--teal) ${(confidence - 50) * 2}%, rgba(255,255,255,0.1) ${(confidence - 50) * 2}%)`,
-                outline: "none",
+                outline: "none", marginBottom: 12,
               }} />
-            <div style={{ fontSize: 11, color: "var(--text-faint)", marginTop: 8, lineHeight: 1.4 }}>
-              Higher confidence = bigger point multiplier if you win.
+            {/* Ticket tier chips */}
+            <div style={{ display: "flex", gap: 6 }}>
+              {[
+                { label: "50–64%", tickets: 1, active: confidence < 65 },
+                { label: "65–79%", tickets: 2, active: confidence >= 65 && confidence < 80 },
+                { label: "80–100%", tickets: 3, active: confidence >= 80 },
+              ].map(tier => (
+                <div key={tier.label} style={{
+                  flex: 1, padding: "6px 8px", borderRadius: 10, textAlign: "center",
+                  background: tier.active ? "rgba(93,237,165,0.15)" : "rgba(255,255,255,0.04)",
+                  border: `1px solid ${tier.active ? "rgba(93,237,165,0.5)" : "var(--line-soft)"}`,
+                  transition: "all 0.15s",
+                }}>
+                  <div style={{ fontSize: 15, fontWeight: 700, fontFamily: "var(--display)", color: tier.active ? "var(--teal)" : "var(--text-faint)" }}>
+                    ×{tier.tickets}
+                  </div>
+                  <div style={{ fontSize: 9, color: tier.active ? "var(--teal)" : "var(--text-faint)", letterSpacing: "0.04em", marginTop: 2 }}>
+                    {tier.label}
+                  </div>
+                </div>
+              ))}
             </div>
+            {boostMult > 1 && (
+              <div style={{ marginTop: 8, fontSize: 11, color: "var(--orange)" }}>
+                With your {fmtMult(boostMult)} boost → <b>{effectiveTickets} tickets</b> if correct
+              </div>
+            )}
           </div>
         )}
 
@@ -604,9 +643,11 @@ const PredictModal = ({ matchId, state, actions, onClose }) => {
         <button
           className="btn btn-primary"
           disabled={!canConfirm}
-          onClick={() => actions.confirmPick(matchId, pick, cost)}
+          onClick={() => actions.confirmPick(matchId, pick, cost, confidence)}
         >
-          {!home.resolved || !away.resolved ? "Awaiting matchup" : (pick ? `Lock in ${pick}` : "Pick a team")}
+          {!home.resolved || !away.resolved ? "Awaiting matchup"
+            : pick ? `Lock in ${pick} · +${effectiveTickets} ticket${effectiveTickets !== 1 ? "s" : ""} if correct`
+            : "Pick a team"}
         </button>
 
         {/* External Thrill betting CTA */}

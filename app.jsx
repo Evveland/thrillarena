@@ -195,7 +195,7 @@ function App() {
       setPendingPredictMatchId(matchId);
       setModal({ type: "deposit", presetAmount: amount });
     },
-    confirmPick: (matchId, teamCode, cost) => {
+    confirmPick: (matchId, teamCode, cost, confidence = 60) => {
       const wasNew = !predictions[matchId];
       setPredictions(p => ({ ...p, [matchId]: teamCode }));
       if (wasNew) {
@@ -205,14 +205,15 @@ function App() {
           setEnergy(e => e - cost);
           setPicksMade(n => n + 1);
         }
-        // ── Daily pool: gate progress + boost-multiplied ticket grant ──
-        const mult = boost.multiplier;
-        const ticketsAwarded = 1 * mult;
+        // ── Confidence → base ticket tiers ─────────────────────────
+        // 50–64% = ×1, 65–79% = ×2, 80–100% = ×3
+        const confidenceBase = confidence < 65 ? 1 : confidence < 80 ? 2 : 3;
+        const ticketsAwarded = confidenceBase * boost.multiplier;
         setPoolState(ps => ({
           ...ps,
           dailyActions: { ...ps.dailyActions, predictions: ps.dailyActions.predictions + 1 },
           dailyTickets: ps.dailyTickets + ticketsAwarded,
-          ticketToast: { tickets: ticketsAwarded, action: "Prediction locked in", _ts: Date.now() },
+          ticketToast: { tickets: ticketsAwarded, action: `Prediction locked in at ${confidence}% confidence`, _ts: Date.now() },
         }));
         // ── Persist to Supabase ───────────────────────────────────
         if (window.SupaDB && dbUser) {
