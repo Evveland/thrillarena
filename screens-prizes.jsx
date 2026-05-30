@@ -575,7 +575,7 @@ const DailyRewardModal = ({ data, onClose, onSeeToday }) => {
             {[
               { label: "Daily raffles",   prize: "$80",    color: "#FF9F1C", sub: "17 draws · 5 winners each" },
               { label: "Group raffles",   prize: "$60",    color: "#22D3EE", sub: "10 groups · drawn at stage end" },
-              { label: "Final Mega",      prize: "$1,000", color: "#5DEDA5", sub: "5 winners · Jul 19" },
+              { label: "Final Mega",      prize: "$1,000", color: "#5DEDA5", sub: "5 winners × $1,000 each · Jul 19" },
             ].map((row, i, arr) => (
               <div key={row.label} style={{
                 display: "flex", alignItems: "center", justifyContent: "space-between",
