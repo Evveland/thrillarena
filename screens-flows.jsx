@@ -4,190 +4,140 @@
 // Mocks the TonConnect SDK flow: wallet picker → QR/deeplink → success.
 // Address shown is deterministic so it survives reload via tweak replay.
 
-const TON_WALLETS = [
-  { id: "tonkeeper",  name: "Tonkeeper",     tag: "Most popular", color: "#0098EA", glyph: "T", recommended: true },
-  { id: "mytonwallet", name: "MyTonWallet", tag: "Browser ext.", color: "#31B8E5", glyph: "M" },
-  { id: "tonhub",     name: "Tonhub",        tag: "Mobile",       color: "#3179FF", glyph: "H" },
-  { id: "openmask",   name: "OpenMask",      tag: "Chrome ext.",  color: "#F6BC4D", glyph: "O" },
-];
-
-const MOCK_WALLET_ADDRESS = "UQAv7K2gZyM3pNzqXr8tFh4WjQfL9bRcKVa2cP0nT5sYg3Rz";
-
 const WalletConnectModal = ({ onClose, onConnected }) => {
-  const [step, setStep] = React.useState("pick"); // pick → connecting → success → error
-  const [wallet, setWallet] = React.useState(null);
+  const [step, setStep]       = React.useState("idle"); // idle | connecting | success | error
+  const [address, setAddress] = React.useState(null);
+  const [walletName, setWalletName] = React.useState(null);
+  const [errMsg, setErrMsg]   = React.useState(null);
 
-  const pick = (w) => {
-    setWallet(w);
+  const startConnect = async () => {
+    if (!window.ThrillTonConnect) {
+      setErrMsg("TON Connect not loaded. Please refresh and try again.");
+      setStep("error");
+      return;
+    }
     setStep("connecting");
+    setErrMsg(null);
+    try {
+      const result = await window.ThrillTonConnect.connect();
+      setAddress(result.address);
+      setWalletName(result.walletName || "TON Wallet");
+      setStep("success");
+    } catch (e) {
+      console.error("[TonConnect] error:", e);
+      // User likely just closed the modal — go back to idle
+      setStep("idle");
+    }
   };
 
-  const fakeApprove = () => setStep("success");
-
   const finish = () => {
-    onConnected(wallet, MOCK_WALLET_ADDRESS);
+    if (address) onConnected(walletName, address);
     onClose();
   };
 
+  // Short display version of a TON address
+  const shortAddr = (a) => a ? `${a.slice(0, 6)}…${a.slice(-6)}` : "";
+
   return (
-    <div className="modal" onClick={onClose} data-screen-label="wallet-connect">
+    <div className="modal" onClick={step === "idle" ? onClose : undefined} data-screen-label="wallet-connect">
       <div className="modal-sheet" onClick={e => e.stopPropagation()} style={{ maxHeight: "90%" }}>
         <div className="modal-handle" />
 
         {/* header */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18, gap: 12 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20, gap: 12 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <TonConnectLogo size={28} />
-            <div style={{ minWidth: 0 }}>
+            <div>
               <div className="eyebrow" style={{ color: "var(--teal)" }}>TON Connect</div>
-              <div style={{ fontSize: 15, fontWeight: 700, marginTop: 2, whiteSpace: "nowrap" }}>
-                {step === "pick" && "Choose a wallet"}
-                {step === "connecting" && `Connecting to ${wallet?.name}`}
-                {step === "success" && "Wallet connected"}
+              <div style={{ fontSize: 15, fontWeight: 700, marginTop: 2 }}>
+                {step === "idle"       && "Connect wallet"}
+                {step === "connecting" && "Waiting for approval…"}
+                {step === "success"    && "Wallet connected ✓"}
+                {step === "error"      && "Connection failed"}
               </div>
             </div>
           </div>
-          <button className="btn" onClick={onClose} style={{
-            width: 36, height: 36, borderRadius: 999, flexShrink: 0,
-            background: "var(--card)", border: "1px solid var(--line-soft)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-          }}>
-            <Icon name="x" size={18} color="var(--text-dim)" />
-          </button>
+          {(step === "idle" || step === "error") && (
+            <button className="btn" onClick={onClose} style={{
+              width: 36, height: 36, borderRadius: 999, flexShrink: 0,
+              background: "var(--card)", border: "1px solid var(--line-soft)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
+              <Icon name="x" size={18} color="var(--text-dim)" />
+            </button>
+          )}
         </div>
 
-        {/* STEP: PICK ─────────────────────────────── */}
-        {step === "pick" && (
+        {/* IDLE — explain + CTA */}
+        {step === "idle" && (
           <>
             <div style={{
-              padding: "12px 14px", marginBottom: 14,
-              background: "rgba(93,237,165,0.06)",
-              border: "1px dashed rgba(93,237,165,0.25)",
-              borderRadius: 14,
-              display: "flex", alignItems: "flex-start", gap: 10,
+              padding: "12px 14px", marginBottom: 20,
+              background: "rgba(93,237,165,0.06)", border: "1px dashed rgba(93,237,165,0.25)",
+              borderRadius: 14, display: "flex", alignItems: "flex-start", gap: 10,
             }}>
               <TokenCoin size={22} />
               <div style={{ fontSize: 12, color: "var(--text-dim)", lineHeight: 1.5 }}>
-                Required for the <b style={{ color: "var(--teal)" }}>20,000 USDT prize payout on Jul 19</b>. Your share lands directly in this wallet.
+                Required for the <b style={{ color: "var(--teal)" }}>$20,000 USDT prize payout on Jul 19</b>.
+                Winners are paid directly to their TON wallet.
               </div>
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {TON_WALLETS.map(w => (
-                <button key={w.id} className="btn" onClick={() => pick(w)} style={{
-                  display: "flex", alignItems: "center", gap: 14,
-                  padding: "12px 14px", textAlign: "left",
-                  background: "var(--card)", border: "1px solid var(--line-soft)",
-                  borderRadius: 14,
-                  position: "relative",
-                }}>
-                  <div style={{
-                    width: 44, height: 44, borderRadius: 12, flexShrink: 0,
-                    background: w.color, color: "#fff",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    fontFamily: "var(--display)", fontSize: 22,
-                    boxShadow: `0 4px 12px ${w.color}33`,
-                  }}>{w.glyph}</div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 14, fontWeight: 700, display: "flex", alignItems: "center", gap: 6 }}>
-                      {w.name}
-                      {w.recommended && (
-                        <span style={{
-                          fontSize: 9, padding: "2px 6px", borderRadius: 999,
-                          background: "var(--teal)", color: "#0A0E1C",
-                          letterSpacing: "0.08em", fontWeight: 800,
-                        }}>POPULAR</span>
-                      )}
-                    </div>
-                    <div style={{ fontSize: 11, color: "var(--text-faint)", marginTop: 2 }}>{w.tag}</div>
-                  </div>
-                  <Icon name="chevron" size={18} color="var(--text-faint)" />
-                </button>
-              ))}
-            </div>
+            <button className="btn btn-primary" onClick={startConnect}
+              style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, fontSize: 15 }}>
+              <TonConnectLogo size={22} />
+              Connect with TON Connect
+            </button>
 
-            <div style={{
-              marginTop: 16, fontSize: 11, color: "var(--text-faint)",
-              textAlign: "center", lineHeight: 1.5,
-            }}>
-              Don't have a wallet? <span style={{ color: "var(--teal)", fontWeight: 700 }}>Get Tonkeeper →</span>
+            <div style={{ marginTop: 12, fontSize: 11, color: "var(--text-faint)", textAlign: "center", lineHeight: 1.5 }}>
+              Supports Tonkeeper, MyTonWallet, Tonhub and all TON Connect wallets.
+              <br/>Don't have one?{" "}
+              <a href="https://tonkeeper.com" target="_blank" rel="noopener noreferrer"
+                style={{ color: "var(--teal)", fontWeight: 700, textDecoration: "none" }}>
+                Get Tonkeeper →
+              </a>
             </div>
           </>
         )}
 
-        {/* STEP: CONNECTING ──────────────────────── */}
-        {step === "connecting" && wallet && (
-          <>
+        {/* CONNECTING — waiting spinner */}
+        {step === "connecting" && (
+          <div style={{ textAlign: "center", padding: "20px 0" }}>
             <div style={{
-              padding: "20px",
-              background: "var(--card)",
-              border: "1px solid var(--line-soft)",
-              borderRadius: 18,
-              marginBottom: 14,
-              textAlign: "center",
+              width: 64, height: 64, borderRadius: "50%", margin: "0 auto 20px",
+              background: "rgba(0,152,234,0.15)", border: "1px solid rgba(0,152,234,0.35)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              position: "relative",
             }}>
-              <div style={{ fontSize: 12, color: "var(--text-dim)", marginBottom: 14 }}>
-                Scan with <b style={{ color: "var(--text)" }}>{wallet.name}</b> or tap below to open
-              </div>
-              <QRPlaceholder color={wallet.color} />
-              <div className="num" style={{
-                marginTop: 14, padding: "8px 12px",
-                background: "rgba(0,0,0,0.3)",
-                border: "1px solid var(--line-soft)",
-                borderRadius: 10,
-                fontFamily: "var(--mono)", fontSize: 11,
-                color: "var(--text-faint)",
-                overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-              }}>
-                tc://connect?v=2&id=ta_{wallet.id}_a7k2x
-              </div>
+              <TonConnectLogo size={36} />
+              {/* spinner ring */}
+              <div style={{
+                position: "absolute", inset: -4, borderRadius: "50%",
+                border: "2px solid transparent",
+                borderTopColor: "#0098EA",
+                animation: "spin 1s linear infinite",
+              }} />
+              <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
             </div>
-
-            <button className="btn" onClick={fakeApprove} style={{
-              width: "100%", padding: "14px 16px",
-              background: wallet.color, color: "#fff",
-              borderRadius: 14, fontSize: 14, fontWeight: 700,
-              letterSpacing: "0.04em",
-              display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-              marginBottom: 8,
-              boxShadow: `0 6px 16px ${wallet.color}55`,
-            }}>
-              <Icon name="arrow" size={16} color="#fff" stroke={2.5} />
-              Open {wallet.name}
-            </button>
-
-            <button className="btn btn-ghost" onClick={() => setStep("pick")} style={{ width: "100%" }}>
-              Choose another wallet
-            </button>
-
-            <div style={{
-              marginTop: 14, padding: "10px 12px",
-              background: "rgba(255,159,28,0.06)",
-              border: "1px dashed rgba(255,159,28,0.25)",
-              borderRadius: 10,
-              fontSize: 11, color: "var(--text-dim)", lineHeight: 1.5,
-              display: "flex", gap: 8, alignItems: "flex-start",
-            }}>
-              <div style={{ width: 14, height: 14, borderRadius: 999, border: "2px solid var(--orange)", borderTopColor: "transparent", animation: "spin 0.9s linear infinite", flexShrink: 0, marginTop: 1 }} />
-              <span>Waiting for approval in {wallet.name}…</span>
+            <div style={{ fontSize: 13, color: "var(--text-dim)", lineHeight: 1.6 }}>
+              The TON Connect wallet picker has opened.
+              <br/>Approve the connection in your wallet app.
             </div>
-
-            <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-          </>
+            <button className="btn" onClick={() => setStep("idle")} style={{
+              marginTop: 20, color: "var(--text-faint)", fontSize: 12,
+            }}>
+              Cancel
+            </button>
+          </div>
         )}
 
-        {/* STEP: SUCCESS ─────────────────────────── */}
-        {step === "success" && wallet && (
+        {/* SUCCESS */}
+        {step === "success" && (
           <>
             <div style={{
-              padding: "24px 20px",
-              background: `
-                radial-gradient(80% 60% at 50% 0%, rgba(93,237,165,0.2), transparent 70%),
-                linear-gradient(180deg, #1A2038, #131829)`,
-              border: "1px solid rgba(93,237,165,0.4)",
-              borderRadius: 18,
-              marginBottom: 14,
-              textAlign: "center",
+              padding: "24px 20px", marginBottom: 16,
+              background: "radial-gradient(80% 60% at 50% 0%, rgba(93,237,165,0.2), transparent 70%), linear-gradient(180deg, #1A2038, #131829)",
+              border: "1px solid rgba(93,237,165,0.4)", borderRadius: 18, textAlign: "center",
             }}>
               <div style={{
                 width: 64, height: 64, borderRadius: 999, margin: "0 auto 14px",
@@ -196,34 +146,42 @@ const WalletConnectModal = ({ onClose, onConnected }) => {
               }}>
                 <Icon name="check" size={36} stroke={3} />
               </div>
-              <div className="h-md" style={{ marginBottom: 6 }}>Connected</div>
+              <div className="h-md" style={{ marginBottom: 8 }}>Connected</div>
               <div className="num" style={{
-                padding: "8px 12px", margin: "0 auto",
-                maxWidth: 280,
-                background: "rgba(0,0,0,0.3)",
-                border: "1px solid var(--line-soft)",
-                borderRadius: 10,
-                fontFamily: "var(--mono)", fontSize: 11,
-                color: "var(--text-dim)",
-                overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                padding: "8px 14px", display: "inline-block",
+                background: "rgba(0,0,0,0.3)", border: "1px solid var(--line-soft)",
+                borderRadius: 10, fontFamily: "var(--mono)", fontSize: 12, color: "var(--text-dim)",
               }}>
-                {MOCK_WALLET_ADDRESS.slice(0, 6)}…{MOCK_WALLET_ADDRESS.slice(-6)}
+                {shortAddr(address)}
               </div>
-
+              <div style={{ marginTop: 12, fontSize: 12, color: "var(--text-dim)" }}>
+                via <b style={{ color: "var(--text)" }}>{walletName}</b>
+              </div>
               <div style={{
                 marginTop: 16, padding: "10px 14px",
-                background: "rgba(255,159,28,0.12)",
-                border: "1px solid rgba(255,159,28,0.3)",
-                borderRadius: 12,
-                display: "inline-flex", alignItems: "center", gap: 8,
+                background: "rgba(255,159,28,0.12)", border: "1px solid rgba(255,159,28,0.3)",
+                borderRadius: 12, display: "inline-flex", alignItems: "center", gap: 8,
               }}>
                 <BoltIcon size={18} color="#FF9F1C" />
-                <span style={{ fontFamily: "var(--display)", fontSize: 18, color: "var(--orange)" }}>+50 ENERGY</span>
+                <span style={{ fontFamily: "var(--display)", fontSize: 18, color: "var(--orange)" }}>+10 ENERGY</span>
               </div>
             </div>
+            <button className="btn btn-primary" onClick={finish}>Continue</button>
+          </>
+        )}
 
-            <button className="btn btn-primary" onClick={finish}>
-              Continue
+        {/* ERROR */}
+        {step === "error" && (
+          <>
+            <div style={{
+              padding: "16px", marginBottom: 16, borderRadius: 14,
+              background: "rgba(255,77,103,0.08)", border: "1px solid rgba(255,77,103,0.3)",
+              fontSize: 13, color: "var(--text-dim)", lineHeight: 1.5,
+            }}>
+              {errMsg || "Could not connect wallet. Please try again."}
+            </div>
+            <button className="btn btn-primary" onClick={() => setStep("idle")} style={{ width: "100%" }}>
+              Try again
             </button>
           </>
         )}
@@ -232,61 +190,9 @@ const WalletConnectModal = ({ onClose, onConnected }) => {
   );
 };
 
-// QR code visual mock (deterministic SVG noise)
-const QRPlaceholder = ({ color = "#0098EA" }) => {
-  // deterministic pattern: 21×21 grid, hash-based fill
-  const N = 21;
-  const cells = [];
-  for (let y = 0; y < N; y++) {
-    for (let x = 0; x < N; x++) {
-      // simple LCG hash for repeatable pattern
-      const h = (x * 73 + y * 151 + x * y * 11) % 7;
-      if (h < 3) cells.push({ x, y });
-    }
-  }
-  // mandatory corner markers
-  const corners = [[0, 0], [N - 7, 0], [0, N - 7]];
-
-  return (
-    <div style={{
-      width: 168, height: 168, margin: "0 auto",
-      background: "#fff",
-      borderRadius: 12,
-      padding: 10,
-      position: "relative",
-    }}>
-      <svg viewBox={`0 0 ${N} ${N}`} width="100%" height="100%">
-        {cells.map((c, i) => (
-          <rect key={i} x={c.x} y={c.y} width="1" height="1" fill="#0A0E1C" />
-        ))}
-        {corners.map(([cx, cy], i) => (
-          <g key={i}>
-            <rect x={cx} y={cy} width="7" height="7" fill="#fff" />
-            <rect x={cx} y={cy} width="7" height="7" fill="none" stroke="#0A0E1C" strokeWidth="1" />
-            <rect x={cx + 2} y={cy + 2} width="3" height="3" fill="#0A0E1C" />
-          </g>
-        ))}
-      </svg>
-      {/* center brand badge */}
-      <div style={{
-        position: "absolute", left: "50%", top: "50%",
-        transform: "translate(-50%, -50%)",
-        width: 36, height: 36, borderRadius: 8,
-        background: color,
-        display: "flex", alignItems: "center", justifyContent: "center",
-        border: "3px solid #fff",
-      }}>
-        <TonGlyph size={20} color="#fff" />
-      </div>
-    </div>
-  );
-};
-
-// TON diamond glyph
 const TonGlyph = ({ size = 24, color = "#0098EA" }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
-    <path d="M5 6 L19 6 L12 20 Z M5 6 L12 12 L19 6 M12 12 L12 20" stroke={color} strokeWidth="1.5" fill="none" />
-    <path d="M5 6 L19 6 L12 20 Z" fill={color} opacity="0.2" />
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5">
+    <path d="M5 6 L19 6 L12 20 Z M5 6 L12 12 L19 6" />
   </svg>
 );
 

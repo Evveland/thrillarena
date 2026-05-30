@@ -216,6 +216,15 @@
     if (error) console.warn("[SupaDB] saveBoost:", error.message);
   }
 
+  // ── Save wallet address ───────────────────────────────────
+  async function saveWalletAddress(userId, address, walletName) {
+    const { error } = await db.from("users").update({
+      wallet_address: address,
+      wallet_name:    walletName ?? null,
+    }).eq("id", userId);
+    if (error) console.warn("[SupaDB] saveWalletAddress:", error.message);
+  }
+
   // ── Write Thrill task ─────────────────────────────────────
   async function saveTask(userId, taskType) {
     const { error } = await db.from("thrill_tasks").insert({
@@ -244,5 +253,6 @@
     saveTask,
     loadLeaderboard,
     getReferralCount,
+    saveWalletAddress,
   };
 })();

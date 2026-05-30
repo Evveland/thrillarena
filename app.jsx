@@ -100,6 +100,12 @@ function App() {
         }
         // Set real invite count from DB
         setInvitesSent(referralCount);
+
+        // Restore saved wallet if user had one connected
+        if (user.wallet_address) {
+          setWallet({ name: user.wallet_name || "TON Wallet", id: "saved", address: user.wallet_address });
+          setTasksDone(t => ({ ...t, wallet: true }));
+        }
         if (saved.lifetimeDeposited > 0) {
           setBoostRaw(b => ({
             ...b,
@@ -300,10 +306,15 @@ function App() {
     dismissDailyReveal: () => setPoolState(ps => ({ ...ps, showDailyReveal: false })),
 
     // Wallet connect callback (from WalletConnectModal)
-    connectWallet: (w, address) => {
-      setWallet({ name: w.name, id: w.id, address });
+    connectWallet: (walletName, address) => {
+      setWallet({ name: walletName, id: "tonconnect", address });
       setTasksDone(t => ({ ...t, wallet: true }));
       setEnergy(e => Math.min(9999, e + 10));
+      // Persist to Supabase
+      if (window.SupaDB && dbUser) {
+        SupaDB.saveWalletAddress(dbUser.id, address, walletName);
+        SupaDB.recordEnergy(dbUser.id, "referral_activated", 10, energy + 10, { notes: "wallet_connect" });
+      }
       // celebratory push
       setTimeout(() => pushNotification({
         title: "TON wallet linked",
