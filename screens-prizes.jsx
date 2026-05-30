@@ -252,7 +252,11 @@ const WinnerTicker = () => {
 // ─── POOLS SCREEN — all 4 layers stacked ───────────────────
 const PoolsScreen = ({ state, actions }) => {
   const [openKey, setOpenKey] = React.useState("daily");
-  const prog = dailyUnlockProgress(state.dailyActions);
+  // Wire today's match count from static schedule
+  const todayMatches = (typeof ALL_MATCHES !== "undefined" ? ALL_MATCHES : [])
+    .filter(m => m.date === TODAY_POOL.date && !m.tbd);
+  const dynamicMin = Math.max(1, Math.min(todayMatches.length, 3));
+  const prog = dailyUnlockProgress(state.dailyActions, dynamicMin);
   return (
     <>
       <ScreenHeader
@@ -343,30 +347,38 @@ const PoolsScreen = ({ state, actions }) => {
 
 // Single pool row — expandable, shows payout table when open
 const PoolRow = ({ pool, open, onToggle, state, prog, actions }) => {
-  const total = pool.totalBudget || pool.poolTotalAcrossGroups || pool.amount || 0;
+  const total = pool.totalBudget || 0;
   const isDaily = pool.key === "daily";
   const eligible = isDaily ? prog?.eligible : null;
-  const ticketsByKey = {
-    daily:  state.dailyTickets,
-    group:  state.groupTickets,
-    weekly: state.weeklyTickets,
-    final:  state.finalTickets,
-  };
-  const userTickets = ticketsByKey[pool.key] != null
-    ? ticketsByKey[pool.key]
-    : (state[`${pool.key}Tickets`] || 0);
+  const userTickets = state[`${pool.key}Tickets`] || 0;
   const cap = TICKET_CAPS[pool.key] ?? "—";
+
+  // ── Wire match data from static schedule ─────────────────
+  // Count scheduled matches relevant to this pool
+  const stageMap = { r32: "r32", r16: "r16", qf: "qf", sf: "sf", final: "final", group: "groups" };
+  const stageKey  = stageMap[pool.key];
+  const poolMatches = stageKey
+    ? ALL_MATCHES.filter(m => m.stage === stageKey && !m.tbd)
+    : [];
+  const firstMatchDate = poolMatches.length
+    ? fmtDate(poolMatches.slice().sort((a,b) => (a.date||"").localeCompare(b.date||""))[0].date)
+    : null;
+  const lastMatchDate = poolMatches.length
+    ? fmtDate(poolMatches.slice().sort((a,b) => (b.date||"").localeCompare(a.date||""))[0].date)
+    : null;
 
   // Pool-specific subtitle
   const subtitle = {
-    daily:  TODAY_POOL.matches > 0 ? `Closes ${TODAY_POOL.closesInHours}h · ${TODAY_POOL.matches} matches today` : `First draw Jun 12 · predict now to enter`,
-    group:  `${pool.units} groups × $${pool.perUnitBudget} · Group stage`,
-    r32:    `${pool.units} fixtures × $${pool.perUnitBudget} · Knockouts begin`,
-    r16:    `${pool.units} fixtures × $${pool.perUnitBudget} · Half the field gone`,
-    qf:     `${pool.units} fixtures × $${pool.perUnitBudget} · Final 8`,
-    sf:     `${pool.units} fixtures × $${pool.perUnitBudget} · Closes Jul 14`,
-    final:  `5 raffle winners × $1,000 each · Closes Jul 19`,
-  }[pool.key] || `${pool.units} ${pool.unitLabel}s · $${pool.perUnitBudget} each`;
+    daily:   TODAY_POOL.matches > 0
+               ? `${TODAY_POOL.matches} matches today · closes ${TODAY_POOL.closesInHours}h`
+               : `First draw Jun 12 · predict now to enter`,
+    group:   `${ALL_MATCHES.filter(m=>m.stage==="groups").length} group matches · Jun 11 – Jun 28`,
+    r32:     `${poolMatches.length} fixtures · Jun 28 – Jul 2`,
+    r16:     `${poolMatches.length} fixtures · Jul 10 – Jul 13`,
+    qf:      `${poolMatches.length} fixtures · Jul 14 – Jul 15`,
+    sf:      `${poolMatches.length} fixtures · Jul 16 – Jul 17`,
+    final:   `5 winners × $1,000 each · Final · Jul 19`,
+  }[pool.key] || `${pool.units} ${pool.unitLabel}s`;
 
   return (
     <div style={{
@@ -464,56 +476,125 @@ const PoolRow = ({ pool, open, onToggle, state, prog, actions }) => {
             })}
           </div>
 
-          {/* How to earn tickets for THIS pool */}
+          {/* How to earn tickets — confidence tiers */}
           <div className="eyebrow muted" style={{ marginTop: 14, marginBottom: 8 }}>How to earn tickets here</div>
           <div style={{
             background: "rgba(0,0,0,0.18)", border: "1px solid var(--line-soft)",
             borderRadius: 12, overflow: "hidden",
           }}>
-            {(ticketEarnPathsFor(pool.key) || []).map((r, i, arr) => (
-              <div key={r.action} style={{
-                display: "grid", gridTemplateColumns: "auto 1fr auto",
-                alignItems: "center", gap: 10, padding: "10px 12px",
-                borderBottom: i < arr.length - 1 ? "1px solid var(--line-soft)" : "none",
-              }}>
-                <TicketGlyph size={14} color={pool.color} />
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ fontSize: 12, color: "var(--text)", fontWeight: 600 }}>{r.action}</div>
-                  <div style={{ fontSize: 10, color: "var(--text-faint)", marginTop: 1 }}>{r.note}</div>
+            {[
+              { conf: "50–64%", label: "Low confidence",    tickets: 1 },
+              { conf: "65–79%", label: "Medium confidence", tickets: 2 },
+              { conf: "80–100%", label: "High confidence",  tickets: 3 },
+            ].map((r, i, arr) => {
+              const boost = state.boost?.multiplier || 1;
+              const effective = r.tickets * boost;
+              return (
+                <div key={r.conf} style={{
+                  display: "flex", alignItems: "center", gap: 10, padding: "10px 12px",
+                  borderBottom: i < arr.length - 1 ? "1px solid var(--line-soft)" : "none",
+                }}>
+                  <TicketGlyph size={14} color={pool.color} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 12, color: "var(--text)", fontWeight: 600 }}>
+                      Correct prediction · {r.conf}
+                    </div>
+                    <div style={{ fontSize: 10, color: "var(--text-faint)", marginTop: 1 }}>{r.label}</div>
+                  </div>
+                  <div style={{ textAlign: "right" }}>
+                    <span className="num" style={{ fontFamily: "var(--display)", fontSize: 14, color: pool.color, whiteSpace: "nowrap" }}>
+                      ×{r.tickets}
+                    </span>
+                    {boost > 1 && (
+                      <div style={{ fontSize: 9, color: "var(--orange)", marginTop: 1, whiteSpace: "nowrap" }}>
+                        = {effective} with {fmtMult(boost)} boost
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <span className="num" style={{ fontFamily: "var(--display)", fontSize: 14, color: pool.color, whiteSpace: "nowrap" }}>
-                  +{r.tickets} <span style={{ fontSize: 9, color: "var(--text-faint)" }}>ticket{r.tickets === 1 ? "" : "s"}</span>
-                </span>
-              </div>
-            ))}
+              );
+            })}
           </div>
+          {/* Boost upsell if no boost */}
+          {(state.boost?.multiplier || 1) <= 1 && (
+            <button className="btn" onClick={() => actions.openBoostHub && actions.openBoostHub()} style={{
+              width: "100%", marginTop: 8, padding: "9px 12px",
+              background: "rgba(255,77,103,0.08)", border: "1px dashed rgba(255,77,103,0.3)",
+              borderRadius: 10, fontSize: 11, color: "var(--text-dim)", lineHeight: 1.4,
+              display: "flex", alignItems: "center", gap: 8,
+            }}>
+              <span style={{ color: "#FF4D67", fontWeight: 700 }}>Deposit on Thrill →</span>
+              <span>multiply every ticket up to ×20</span>
+            </button>
+          )}
 
           {/* Hook copy */}
           <div style={{ marginTop: 12, fontSize: 11, color: "var(--text-faint)", lineHeight: 1.5 }}>
-            <b style={{ color: pool.color }}>{pool.hook}.</b>{" "}
-            {pool.key === "daily" && "Every matchday is a fresh raffle. Tickets reset at midnight UTC."}
-            {pool.key === "group" && "One raffle per group — 10 groups feed the $3,000 pool."}
-            {pool.key === "r32"   && "Only correct R32 predictions feed this pool — round closes when the bracket advances."}
-            {pool.key === "r16"   && "Tickets earned correctly predicting Round of 16 fixtures enter this draw."}
-            {pool.key === "qf"    && "Quarterfinal tickets fund the final 8 raffle — fewer fixtures, bigger purse."}
-            {pool.key === "sf"    && "Two semifinals settle into one raffle of 5 winners at $80 each."}
-            {pool.key === "final" && "5 raffle winners draw $1,000 each. The VIP slot is reserved for depositors."}
+            {pool.key === "daily" && <><b style={{ color: pool.color }}>Drive daily return visits.</b> Every matchday is a fresh raffle. Correct picks from that day feed the draw — predict more matches to stack tickets.</>}
+            {pool.key === "group" && <><b style={{ color: pool.color }}>One raffle per group.</b> Correct predictions for matches within a group earn tickets into that group's $300 raffle. 10 groups · 5 winners each.</>}
+            {pool.key === "r32"   && <><b style={{ color: pool.color }}>Knockouts begin.</b> Correct R32 predictions earn tickets into the $1,600 pool. Draw runs after the round closes.</>}
+            {pool.key === "r16"   && <><b style={{ color: pool.color }}>Fewer fixtures, bigger prizes.</b> Round of 16 correct picks earn tickets. $200 per fixture, 5 winners each.</>}
+            {pool.key === "qf"    && <><b style={{ color: pool.color }}>Final 8.</b> 4 quarterfinal fixtures, $300 each, 5 winners per fixture.</>}
+            {pool.key === "sf"    && <><b style={{ color: pool.color }}>Two matches, ten winners.</b> $400 per semifinal, 5 winners each, drawn after both semis complete.</>}
+            {pool.key === "final" && <><b style={{ color: pool.color }}>The hero prize.</b> 5 raffle winners draw $1,000 each on Jul 19. Deposit on Thrill to multiply your ticket count up to ×20.</>}
           </div>
+
+          {/* Matches in this pool — wired to schedule data */}
+          {poolMatches.length > 0 && pool.key !== "daily" && (
+            <div style={{ marginTop: 14 }}>
+              <div className="eyebrow muted" style={{ marginBottom: 8 }}>
+                Matches in this pool ({poolMatches.length})
+              </div>
+              <div style={{
+                background: "rgba(0,0,0,0.18)", border: "1px solid var(--line-soft)",
+                borderRadius: 12, overflow: "hidden", maxHeight: 220, overflowY: "auto",
+              }}>
+                {poolMatches.slice(0, 12).map((m, i, arr) => {
+                  const h = TEAMS[m.home], a = TEAMS[m.away];
+                  const pick = state.predictions?.[m.id];
+                  return (
+                    <div key={m.id} style={{
+                      display: "flex", alignItems: "center", gap: 10, padding: "9px 12px",
+                      borderBottom: i < Math.min(arr.length,12) - 1 ? "1px solid var(--line-soft)" : "none",
+                      background: pick ? "rgba(93,237,165,0.04)" : "transparent",
+                    }}>
+                      <span style={{ fontSize: 10, color: "var(--text-faint)", width: 42, flexShrink: 0 }} className="num">
+                        {fmtDate(m.date)}
+                      </span>
+                      <span className="flag" style={{ fontSize: 16 }}>{h?.flag || "🏳"}</span>
+                      <span style={{ fontSize: 11, fontWeight: 600, flex: 1, color: "var(--text-dim)" }}>
+                        {h?.short || m.home} vs {a?.short || m.away}
+                      </span>
+                      <span className="flag" style={{ fontSize: 16 }}>{a?.flag || "🏳"}</span>
+                      {pick
+                        ? <span style={{ fontSize: 10, color: "var(--teal)", fontWeight: 700, flexShrink: 0 }}>✓ {pick}</span>
+                        : <span style={{ fontSize: 10, color: "var(--text-faint)", flexShrink: 0 }}>–</span>
+                      }
+                    </div>
+                  );
+                })}
+                {poolMatches.length > 12 && (
+                  <div style={{ padding: "8px 12px", fontSize: 11, color: "var(--text-faint)", textAlign: "center" }}>
+                    +{poolMatches.length - 12} more matches
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
   );
 };
 
-// Map: which TICKET_RULES contribute to a given pool key. Used by PoolRow
-// to show users the exact actions that feed each raffle.
+// Current ticket-earn paths — confidence mechanic replaces the XP/task system.
+// Each correct prediction earns 1–3 base tickets × active boost multiplier.
 function ticketEarnPathsFor(poolKey) {
-  return (typeof TICKET_RULES !== "undefined" ? TICKET_RULES : [])
-    .filter(r => r.tickets > 0 && (
-      (r.pools || []).includes(poolKey) ||
-      // "{stage}" placeholder = any knockout/group round (everything except daily/final)
-      ((r.pools || []).includes("{stage}") && poolKey !== "daily" && poolKey !== "final")
-    ));
+  return [
+    { action: "Correct prediction · 50–64% confidence", note: "Low confidence",           tickets: 1 },
+    { action: "Correct prediction · 65–79% confidence", note: "Medium confidence",         tickets: 2 },
+    { action: "Correct prediction · 80–100% confidence", note: "High confidence — bold call", tickets: 3 },
+  ];
 }
 
 // ─── YESTERDAY WIN REVEAL — the dopamine moment ────────
