@@ -48,35 +48,50 @@ const TasksScreen = ({ state, actions }) => {
       </div>
 
       {/* feature: daily spin */}
-      <div style={{ padding: "0 20px 12px" }}>
-        <button className="btn" onClick={() => actions.openCasino()} style={{
-          width: "100%", textAlign: "left", padding: 0,
-          borderRadius: 22, overflow: "hidden",
-          background: `
-            radial-gradient(60% 80% at 100% 50%, rgba(255,77,103,0.4), transparent 60%),
-            radial-gradient(70% 100% at 0% 0%, rgba(93,237,165,0.3), transparent 60%),
-            linear-gradient(135deg, #232844 0%, #1A2038 100%)`,
-          border: "1px solid var(--line)",
-          position: "relative",
-        }}>
-          <div style={{
-            display: "flex", justifyContent: "space-between", alignItems: "center",
-            padding: "18px 22px", gap: 14,
-          }}>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div className="eyebrow" style={{ color: "var(--gold)", marginBottom: 8 }}>★ Featured</div>
-              <div className="h-lg" style={{ marginBottom: 6 }}>Daily Spin</div>
-              <div style={{ fontSize: 13, color: "var(--text-dim)", marginBottom: 12 }}>Spin to win up to ⚡50</div>
-              <div style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "var(--teal)", fontSize: 12, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", whiteSpace: "nowrap" }}>
-                Play now <Icon name="arrow" size={14} stroke={2.5} />
+      {(() => {
+        const spinLocked = getSpinCooldownMs() > 0;
+        return (
+          <div style={{ padding: "0 20px 12px" }}>
+            <button className="btn" onClick={() => actions.openCasino()} style={{
+              width: "100%", textAlign: "left", padding: 0,
+              borderRadius: 22, overflow: "hidden",
+              background: spinLocked
+                ? "linear-gradient(135deg, #1A1A28 0%, #141420 100%)"
+                : `radial-gradient(60% 80% at 100% 50%, rgba(255,77,103,0.4), transparent 60%),
+                   radial-gradient(70% 100% at 0% 0%, rgba(93,237,165,0.3), transparent 60%),
+                   linear-gradient(135deg, #232844 0%, #1A2038 100%)`,
+              border: `1px solid ${spinLocked ? "var(--line-soft)" : "var(--line)"}`,
+              opacity: spinLocked ? 0.75 : 1,
+              position: "relative",
+            }}>
+              <div style={{
+                display: "flex", justifyContent: "space-between", alignItems: "center",
+                padding: "18px 22px", gap: 14,
+              }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div className="eyebrow" style={{ color: spinLocked ? "var(--text-faint)" : "var(--gold)", marginBottom: 8 }}>
+                    {spinLocked ? "⏳ On cooldown" : "★ Featured"}
+                  </div>
+                  <div className="h-lg" style={{ marginBottom: 6 }}>Daily Spin</div>
+                  <div style={{ fontSize: 13, color: "var(--text-dim)", marginBottom: 12 }}>
+                    {spinLocked
+                      ? `Next spin in ${formatCountdown(getSpinCooldownMs())}`
+                      : "Spin to win up to ⚡50"}
+                  </div>
+                  {!spinLocked && (
+                    <div style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "var(--teal)", fontSize: 12, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", whiteSpace: "nowrap" }}>
+                      Play now <Icon name="arrow" size={14} stroke={2.5} />
+                    </div>
+                  )}
+                </div>
+                <div style={{ position: "relative", width: 96, height: 96, flexShrink: 0, opacity: spinLocked ? 0.4 : 1 }}>
+                  <MiniWheel />
+                </div>
               </div>
-            </div>
-            <div style={{ position: "relative", width: 96, height: 96, flexShrink: 0 }}>
-              <MiniWheel />
-            </div>
+            </button>
           </div>
-        </button>
-      </div>
+        );
+      })()}
 
       {/* tasks list */}
       <div style={{ padding: "8px 20px 0" }}>
@@ -197,13 +212,45 @@ const MiniWheel = () => {
 };
 
 // ─── CASINO MINI-GAME — SPIN WHEEL ────────────────────────
+const SPIN_KEY = "ta_spin_last"; // localStorage key for last spin timestamp
+const SPIN_COOLDOWN_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+function getSpinCooldownMs() {
+  const last = parseInt(localStorage.getItem(SPIN_KEY) || "0", 10);
+  if (!last) return 0;
+  const remaining = last + SPIN_COOLDOWN_MS - Date.now();
+  return Math.max(0, remaining);
+}
+
+function formatCountdown(ms) {
+  if (ms <= 0) return "00:00:00";
+  const h = Math.floor(ms / 3600000);
+  const m = Math.floor((ms % 3600000) / 60000);
+  const s = Math.floor((ms % 60000) / 1000);
+  return [h, m, s].map(n => String(n).padStart(2, "0")).join(":");
+}
+
 const CasinoScreen = ({ state, actions, onClose }) => {
   const [spinning, setSpinning] = React.useState(false);
-  const [result, setResult] = React.useState(null); // segment index
-  const [angle, setAngle] = React.useState(0);
+  const [result, setResult]     = React.useState(null);
+  const [angle, setAngle]       = React.useState(0);
+  const [cooldownMs, setCooldownMs] = React.useState(() => getSpinCooldownMs());
+
+  // Tick the countdown every second
+  React.useEffect(() => {
+    if (cooldownMs <= 0) return;
+    const t = setInterval(() => {
+      const remaining = getSpinCooldownMs();
+      setCooldownMs(remaining);
+      if (remaining <= 0) clearInterval(t);
+    }, 1000);
+    return () => clearInterval(t);
+  }, [cooldownMs > 0]);
+
+  const isLocked = cooldownMs > 0;
 
   const spin = () => {
-    if (spinning) return;
+    if (spinning || isLocked) return;
     const seg = Math.floor(Math.random() * WHEEL_SEGMENTS.length);
     const segAngle = 360 / WHEEL_SEGMENTS.length;
     const target = 360 * 5 + (360 - (seg * segAngle + segAngle / 2));
@@ -212,6 +259,9 @@ const CasinoScreen = ({ state, actions, onClose }) => {
     setTimeout(() => {
       setSpinning(false);
       setResult(seg);
+      // Lock the spin as soon as the wheel stops
+      localStorage.setItem(SPIN_KEY, Date.now().toString());
+      setCooldownMs(SPIN_COOLDOWN_MS);
     }, 3800);
   };
 
@@ -248,17 +298,27 @@ const CasinoScreen = ({ state, actions, onClose }) => {
       {/* wheel */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "0 20px", minHeight: 0 }}>
         <div className="h-xl" style={{ textAlign: "center", marginBottom: 10, lineHeight: 1, whiteSpace: "nowrap" }}>
-          {result == null ? "Spin to win" : (WHEEL_SEGMENTS[result].energy > 0 ? "You won!" : "So close...")}
+          {isLocked && result == null ? "Come back tomorrow"
+            : result == null ? "Spin to win"
+            : WHEEL_SEGMENTS[result].energy > 0 ? "You won!"
+            : "So close..."}
         </div>
         <div style={{ fontSize: 13, color: "var(--text-dim)", marginBottom: 24, textAlign: "center", maxWidth: 280 }}>
-          {result == null
+          {isLocked && result == null ? (
+            <span>
+              Next spin in{" "}
+              <b className="num" style={{ color: "var(--gold)", fontFamily: "var(--display)", fontSize: 16 }}>
+                {formatCountdown(cooldownMs)}
+              </b>
+            </span>
+          ) : result == null
             ? "One free spin every 24 hours"
             : WHEEL_SEGMENTS[result].energy > 0
               ? `+${WHEEL_SEGMENTS[result].energy} energy added to your wallet`
               : "Better luck tomorrow"}
         </div>
 
-        <div style={{ position: "relative", width: 300, height: 300, marginBottom: 30 }}>
+        <div style={{ position: "relative", width: 300, height: 300, marginBottom: 30, opacity: isLocked && result == null ? 0.45 : 1, transition: "opacity 0.4s" }}>
           {/* outer glow */}
           <div style={{
             position: "absolute", inset: -20, borderRadius: "50%",
@@ -299,13 +359,35 @@ const CasinoScreen = ({ state, actions, onClose }) => {
           }} />
         </div>
 
-        {result == null ? (
+        {result != null ? (
+          <button className="btn btn-primary" onClick={claim} style={{ width: "100%", maxWidth: 280 }}>
+            {WHEEL_SEGMENTS[result].energy > 0 ? `Claim ⚡${WHEEL_SEGMENTS[result].energy}` : "Close"}
+          </button>
+        ) : isLocked ? (
+          <div style={{ width: "100%", maxWidth: 280, textAlign: "center" }}>
+            <div style={{
+              padding: "14px 20px", borderRadius: 16,
+              background: "rgba(255,255,255,0.04)",
+              border: "1px solid var(--line-soft)",
+              marginBottom: 10,
+            }}>
+              <div style={{ fontSize: 11, color: "var(--text-faint)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 6 }}>
+                Next spin available in
+              </div>
+              <div className="num" style={{ fontFamily: "var(--display)", fontSize: 32, color: "var(--gold)", letterSpacing: "0.04em" }}>
+                {formatCountdown(cooldownMs)}
+              </div>
+            </div>
+            <button className="btn" onClick={onClose} style={{
+              width: "100%", height: 44,
+              color: "var(--text-faint)", fontSize: 13,
+            }}>
+              Close
+            </button>
+          </div>
+        ) : (
           <button className="btn btn-primary" disabled={spinning} onClick={spin} style={{ width: "100%", maxWidth: 280 }}>
             {spinning ? "Spinning..." : "Spin the wheel"}
-          </button>
-        ) : (
-          <button className="btn btn-primary" onClick={claim} style={{ width: "100%", maxWidth: 280 }}>
-            {WHEEL_SEGMENTS[result].energy > 0 ? `Claim ⚡${WHEEL_SEGMENTS[result].energy}` : "Try again tomorrow"}
           </button>
         )}
       </div>
