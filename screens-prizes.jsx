@@ -541,7 +541,7 @@ const DailyRewardModal = ({ data, onClose, onSeeToday }) => {
           </button>
         </div>
 
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", textAlign: "center", gap: 0, position: "relative", zIndex: 2 }}>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", position: "relative", zIndex: 2 }}>
           {/* Trophy icon */}
           <div style={{
             width: 80, height: 80, borderRadius: "50%", marginBottom: 24,
@@ -560,13 +560,13 @@ const DailyRewardModal = ({ data, onClose, onSeeToday }) => {
             First prizes on{"\n"}
             <span style={{ color: "var(--teal)" }}>{data.firstDrawLabel}</span>
           </div>
-          <div style={{ fontSize: 14, color: "var(--text-dim)", lineHeight: 1.6, maxWidth: 300, marginBottom: 28 }}>
+          <div style={{ fontSize: 14, color: "var(--text-dim)", lineHeight: 1.6, marginBottom: 28 }}>
             Matches kick off <b style={{ color: "var(--text)" }}>Jun 11</b>. Winners from Day 1 are announced the next morning. Predict today to stack your raffle tickets before the first draw.
           </div>
 
           {/* Prize ladder teaser */}
           <div style={{
-            width: "100%", maxWidth: 320,
+            width: "100%",
             borderRadius: 18,
             background: "rgba(255,255,255,0.04)",
             border: "1px solid var(--line-soft)",
