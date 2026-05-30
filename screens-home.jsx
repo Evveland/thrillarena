@@ -175,25 +175,16 @@ const HomeScreen = ({ state, actions }) => {
           boost={state.boost} onBoostClick={actions.openBoostHub} />
       </div>
 
-      {/* ─── DAILY MATCHDAY POOL (dopamine loop driver) ─── */}
-      <DailyPoolCard state={state} actions={actions} />
-
-      <div style={{ height: 20 }} />
-
-      {/* hero — next match */}
+      {/* ─── HERO: NEXT MATCH + CTA ─── */}
       <div style={{ padding: "0 20px" }}>
         <div style={{
-          position: "relative",
-          borderRadius: 28,
-          padding: 22,
+          position: "relative", borderRadius: 28, padding: "18px 20px 20px",
           background: `
             radial-gradient(140% 90% at 0% 0%, rgba(93,237,165,0.22), transparent 60%),
             radial-gradient(120% 80% at 100% 100%, rgba(255,77,103,0.18), transparent 60%),
             linear-gradient(180deg, #1A2038 0%, #131829 100%)`,
-          border: "1px solid var(--line)",
-          overflow: "hidden",
+          border: "1px solid var(--line)", overflow: "hidden",
         }}>
-          {/* stadium light streaks */}
           <div style={{
             position: "absolute", top: 0, left: "30%", width: 2, height: "100%",
             background: "linear-gradient(180deg, transparent, var(--teal-glow), transparent)",
@@ -203,42 +194,46 @@ const HomeScreen = ({ state, actions }) => {
             background: "linear-gradient(180deg, transparent, rgba(255,159,28,0.4), transparent)",
           }} />
 
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, gap: 10 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14, gap: 10 }}>
             <div className="eyebrow" style={{ whiteSpace: "nowrap" }}>Next match · {STAGES.find(s => s.key === nextMatch.stage)?.short || ""}{nextMatch.group ? ` ${nextMatch.group}` : ""}</div>
             <div className="chip teal num">{fmtDate(nextMatch.date)}</div>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: 12, marginBottom: 18 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: 8, marginBottom: 14 }}>
             <div style={{ textAlign: "center" }}>
-              <div className="flag" style={{ fontSize: 56, lineHeight: 1, marginBottom: 8 }}>{home.flag}</div>
+              <div className="flag" style={{ fontSize: 44, lineHeight: 1, marginBottom: 6 }}>{home.flag}</div>
               <div className="h-md">{home.short || home.code}</div>
               <div style={{ fontSize: 11, color: "var(--text-faint)", marginTop: 2 }}>{home.name}</div>
             </div>
             <div style={{ textAlign: "center" }}>
               <div className="h-lg" style={{ color: "var(--text-faint)" }}>VS</div>
-              {nextMatch.odds && (
-                <div className="num" style={{ fontSize: 11, color: "var(--text-faint)", marginTop: 4 }}>
-                  {Number(nextMatch.odds?.[0] ?? 0).toFixed(2)} / {Number(nextMatch.odds?.[1] ?? 0).toFixed(2)}
-                </div>
-              )}
             </div>
             <div style={{ textAlign: "center" }}>
-              <div className="flag" style={{ fontSize: 56, lineHeight: 1, marginBottom: 8 }}>{away.flag}</div>
+              <div className="flag" style={{ fontSize: 44, lineHeight: 1, marginBottom: 6 }}>{away.flag}</div>
               <div className="h-md">{away.short || away.code}</div>
               <div style={{ fontSize: 11, color: "var(--text-faint)", marginTop: 2 }}>{away.name}</div>
             </div>
           </div>
 
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, fontSize: 12, color: "var(--text-dim)", gap: 12 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14, fontSize: 12, color: "var(--text-dim)", gap: 12 }}>
             <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>📍 {VENUES[nextMatch.venue]?.name || "TBD"}</span>
             <span className="num" style={{ flexShrink: 0 }}>⏱ {nextMatch.times?.local || "TBD"}</span>
           </div>
 
-          <div style={{ fontSize: 12, color: "var(--text-faint)", textAlign: "center", paddingTop: 4 }}>
+          <button className="btn btn-primary" onClick={() => actions.openPredict(nextMatch.id)}
+            style={{ width: "100%", fontSize: 15 }}>
+            {predictions[nextMatch.id] ? "Change Pick" : "Make Prediction"}
+          </button>
+          <div style={{ marginTop: 8, textAlign: "center", fontSize: 11, color: "var(--text-faint)" }}>
             Each pick costs <b style={{ color: "var(--orange)" }}>⚡10</b> · Invite friends for +30 ⚡ each
           </div>
         </div>
       </div>
+
+      <div style={{ height: 16 }} />
+
+      {/* ─── DAILY MATCHDAY POOL ─── */}
+      <DailyPoolCard state={state} actions={actions} />
 
       {/* stats strip */}
       <div style={{ padding: "20px 20px 0", display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
@@ -276,20 +271,8 @@ const HomeScreen = ({ state, actions }) => {
         </div>
       </div>
 
-      {/* ─── STICKY PREDICT CTA ── always above the nav bar ── */}
-      <div style={{
-        position: "sticky", bottom: 0, zIndex: 10,
-        padding: "12px 20px 12px",
-        background: "linear-gradient(to top, #0A0E1C 70%, transparent)",
-      }}>
-        <button className="btn btn-primary" onClick={() => actions.openPredict(nextMatch.id)}
-          style={{ width: "100%", fontSize: 16 }}>
-          {predictions[nextMatch.id] ? `Change Pick · ${nextMatch.home} vs ${nextMatch.away}` : "Make Prediction"}
-        </button>
-      </div>
-
       {/* mini leaderboard */}
-      <div style={{ padding: "0 20px 0" }}>
+      <div style={{ padding: "20px 20px 0" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 10, gap: 10 }}>
           <div className="eyebrow" style={{ whiteSpace: "nowrap" }}>Live leaderboard</div>
           <button className="btn" onClick={() => actions.goto("leaderboard")}

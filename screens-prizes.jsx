@@ -153,41 +153,30 @@ const CountdownRing = ({ hours = 7 }) => {
   );
 };
 
-// 3 unlock gates: Predictions / Thrill visits / Thrill tasks
+// Unlock gate: predictions only (Thrill gates re-enabled when integration is live)
 const UnlockGates = ({ prog }) => {
-  const Row = ({ label, done, need, hint }) => {
-    const ratio = Math.min(1, done / need);
-    const ok = done >= need;
-    return (
-      <div style={{ marginBottom: 8 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-          <span style={{ fontSize: 11, color: ok ? "var(--teal)" : "var(--text-dim)", display: "flex", alignItems: "center", gap: 6, fontWeight: 600 }}>
-            {ok && <Icon name="check" size={12} color="var(--teal)" stroke={3} />}
-            {label}
-          </span>
-          <span className="num" style={{
-            fontSize: 11, fontFamily: "var(--display)",
-            color: ok ? "var(--teal)" : "var(--text)",
-            letterSpacing: "0.04em",
-          }}>{done}/{need}</span>
-        </div>
-        <div style={{ height: 4, borderRadius: 2, background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
-          <div style={{
-            height: "100%", width: `${ratio * 100}%`,
-            background: ok
-              ? "linear-gradient(90deg, var(--teal), #C8FFE0)"
-              : "linear-gradient(90deg, var(--orange), var(--gold))",
-            transition: "width 0.3s ease",
-          }} />
-        </div>
-      </div>
-    );
-  };
+  const done  = prog.preds;
+  const need  = prog.u.minPredictions;
+  const ratio = Math.min(1, done / need);
+  const ok    = done >= need;
   return (
-    <div>
-      <Row label="Predict today's matches" done={prog.preds}  need={prog.u.minPredictions} />
-      <Row label="Visit Thrill betting page" done={prog.visits} need={prog.u.minThrillVisits} />
-      <Row label="Complete a Thrill task"   done={prog.tasks}  need={prog.u.minThrillTasks} />
+    <div style={{ marginBottom: 4 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+        <span style={{ fontSize: 11, color: ok ? "var(--teal)" : "var(--text-dim)", display: "flex", alignItems: "center", gap: 6, fontWeight: 600 }}>
+          {ok && <Icon name="check" size={12} color="var(--teal)" stroke={3} />}
+          Predict today's matches
+        </span>
+        <span className="num" style={{ fontSize: 11, fontFamily: "var(--display)", color: ok ? "var(--teal)" : "var(--text)", letterSpacing: "0.04em" }}>
+          {done}/{need}
+        </span>
+      </div>
+      <div style={{ height: 4, borderRadius: 2, background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
+        <div style={{
+          height: "100%", width: `${ratio * 100}%`,
+          background: ok ? "linear-gradient(90deg, var(--teal), #C8FFE0)" : "linear-gradient(90deg, var(--orange), var(--gold))",
+          transition: "width 0.3s ease",
+        }} />
+      </div>
     </div>
   );
 };
