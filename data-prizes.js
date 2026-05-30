@@ -220,18 +220,14 @@ const TICKET_CAPS = {
 function poolByKey(k) { return POOL_LAYERS.find(p => p.key === k); }
 
 // Compute pool unlock progress given the user's daily-pool action counts.
-function dailyUnlockProgress(s) {
-  const u = TODAY_POOL.unlock;
+function dailyUnlockProgress(s, dynamicMin) {
+  const u = { ...TODAY_POOL.unlock };
+  if (dynamicMin != null) u.minPredictions = dynamicMin;
   const preds = Math.min(s.predictions || 0, u.minPredictions);
-  const visits = Math.min(s.thrillVisits || 0, u.minThrillVisits);
-  const tasks = Math.min(s.thrillTasks || 0, u.minThrillTasks);
-  const total = u.minPredictions + u.minThrillVisits + u.minThrillTasks;
-  const done  = preds + visits + tasks;
-  const ratio = done / total;
-  const eligible = preds === u.minPredictions
-                && visits === u.minThrillVisits
-                && tasks === u.minThrillTasks;
-  return { preds, visits, tasks, total, done, ratio, eligible, u };
+  const done  = preds;
+  const ratio = u.minPredictions > 0 ? done / u.minPredictions : 0;
+  const eligible = preds >= u.minPredictions && u.minPredictions > 0;
+  return { preds, visits: 0, tasks: 0, total: u.minPredictions, done, ratio, eligible, u };
 }
 
 // Selection-method styling tokens

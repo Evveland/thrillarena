@@ -45,8 +45,9 @@ const TicketGlyph = ({ size = 16, color = "#FF9F1C" }) => (
 // ─── DAILY POOL CARD — HOME HERO ───────────────────────
 // The dopamine loop driver. Shows today's pool, 3 unlock gates, your
 // raffle tickets, the countdown, and a "winners just paid" social bar.
-const DailyPoolCard = ({ state, actions }) => {
-  const prog = dailyUnlockProgress(state.dailyActions);
+const DailyPoolCard = ({ state, actions, todayMatchCount = 0, todayPredictedCount = 0 }) => {
+  const dynamicMin = Math.max(1, Math.min(todayMatchCount, 3));
+  const prog = dailyUnlockProgress(state.dailyActions, dynamicMin);
   const tickets = state.dailyTickets || 0;
   const eligible = prog.eligible;
 
@@ -153,12 +154,19 @@ const CountdownRing = ({ hours = 7 }) => {
   );
 };
 
-// Unlock gate: predictions only (Thrill gates re-enabled when integration is live)
+// Unlock gate: predictions only — count driven by actual scheduled matches
 const UnlockGates = ({ prog }) => {
   const done  = prog.preds;
   const need  = prog.u.minPredictions;
-  const ratio = Math.min(1, done / need);
-  const ok    = done >= need;
+  const ratio = need > 0 ? Math.min(1, done / need) : 0;
+  const ok    = done >= need && need > 0;
+
+  if (need === 0) return (
+    <div style={{ fontSize: 11, color: "var(--text-faint)", padding: "4px 0 8px" }}>
+      No matches today · first matches Jun 11
+    </div>
+  );
+
   return (
     <div style={{ marginBottom: 4 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
