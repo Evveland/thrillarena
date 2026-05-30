@@ -150,17 +150,27 @@ const HomeScreen = ({ state, actions }) => {
     <>
       {/* header */}
       <div style={{ padding: "10px 20px 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{
-            width: 36, height: 36, borderRadius: 10, background: "var(--teal)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            color: "#0A0E1C", fontFamily: "var(--display)", fontSize: 18,
-          }}>Y</div>
-          <div>
-            <div style={{ fontSize: 11, color: "var(--text-faint)", letterSpacing: "0.06em", textTransform: "uppercase" }}>Welcome back</div>
-            <div style={{ fontWeight: 600, fontSize: 14 }}>@you</div>
-          </div>
-        </div>
+        {(() => {
+          // Prefer DB user; fall back to Telegram initDataUnsafe while loading
+          const tg = window.Telegram?.WebApp?.initDataUnsafe?.user;
+          const username    = state.dbUser?.username    || tg?.username    || null;
+          const displayName = state.dbUser?.display_name|| tg?.first_name  || null;
+          const label       = username ? `@${username}` : (displayName || "@you");
+          const initial     = (displayName || username || "Y")[0].toUpperCase();
+          return (
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{
+                width: 36, height: 36, borderRadius: 10, background: "var(--teal)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                color: "#0A0E1C", fontFamily: "var(--display)", fontSize: 18,
+              }}>{initial}</div>
+              <div>
+                <div style={{ fontSize: 11, color: "var(--text-faint)", letterSpacing: "0.06em", textTransform: "uppercase" }}>Welcome back</div>
+                <div style={{ fontWeight: 600, fontSize: 14 }}>{label}</div>
+              </div>
+            </div>
+          );
+        })()}
         <StatusPills energy={energy} tokens={tokens}
           boost={state.boost} onBoostClick={actions.openBoostHub} />
       </div>

@@ -430,7 +430,7 @@ function App() {
 
   const state = {
     energy, tokens, predictions, freePicksLeft, energyPerPick, tasksDone,
-    wallet, channelJoined, invitesSent, notifPrefs, boost,
+    wallet, channelJoined, invitesSent, notifPrefs, boost, dbUser,
     boostFirstFlow: tweaks.boostFirstFlow,
     // Prize-pool slice — one ticket count per raffle layer
     dailyActions: poolState.dailyActions,
