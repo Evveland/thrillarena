@@ -731,5 +731,5 @@ const NotificationToast = ({ notification, onDismiss, onTap }) => {
 
 Object.assign(window, {
   WalletConnectModal, ChannelVerifyModal, InviteShareModal,
-  NotifyOptInModal, NotificationToast, MOCK_WALLET_ADDRESS,
+  NotifyOptInModal, NotificationToast,
 });
