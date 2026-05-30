@@ -245,90 +245,17 @@ const HomeScreen = ({ state, actions }) => {
         </div>
       </div>
 
-      {/* ─── TODAY'S PREDICTIONS + TICKETS ─── */}
-      <div style={{ padding: "12px 20px 0" }}>
-        <div style={{
-          borderRadius: 18, overflow: "hidden",
-          background: "rgba(255,255,255,0.03)",
-          border: "1px solid var(--line-soft)",
-        }}>
-          {/* header row */}
-          <div style={{
-            display: "flex", alignItems: "center", justifyContent: "space-between",
-            padding: "12px 16px 10px",
-            borderBottom: todayMatches.length > 0 ? "1px solid var(--line-soft)" : "none",
-          }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-dim)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
-              Today's picks
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              {/* Predictions count */}
-              <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12 }}>
-                <span style={{ color: "var(--text-faint)" }}>Predicted</span>
-                <span className="num" style={{ fontFamily: "var(--display)", fontSize: 14, color: todayPredicted.length > 0 ? "var(--teal)" : "var(--text)" }}>
-                  {todayPredicted.length}/{todayMatches.length || "—"}
-                </span>
-              </div>
-              {/* Tickets */}
-              <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12 }}>
-                <TicketGlyph size={14} color="#FF9F1C" />
-                <span className="num" style={{ fontFamily: "var(--display)", fontSize: 14, color: todayTickets > 0 ? "var(--orange)" : "var(--text-faint)" }}>
-                  {todayTickets}
-                </span>
-                <span style={{ color: "var(--text-faint)" }}>tickets</span>
-              </div>
-            </div>
-          </div>
-
-          {/* predicted matches list */}
-          {todayMatches.length > 0 ? todayMatches.map((m, i) => {
-            const pick = predictions[m.id];
-            const mHome = TEAMS[m.home], mAway = TEAMS[m.away];
-            return (
-              <button key={m.id} className="btn" onClick={() => actions.openPredict(m.id)}
-                style={{
-                  width: "100%", textAlign: "left",
-                  display: "flex", alignItems: "center", gap: 10,
-                  padding: "9px 16px",
-                  borderBottom: i < todayMatches.length - 1 ? "1px solid var(--line-soft)" : "none",
-                  background: pick ? "rgba(93,237,165,0.04)" : "transparent",
-                }}>
-                <span className="flag" style={{ fontSize: 18 }}>{mHome?.flag || "🏳"}</span>
-                <span style={{ fontSize: 12, fontWeight: 600, flex: 1, minWidth: 0, color: "var(--text-dim)" }}>
-                  {mHome?.short || m.home} vs {mAway?.short || m.away}
-                </span>
-                {pick ? (
-                  <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                    <Icon name="check" size={12} color="var(--teal)" stroke={3} />
-                    <span style={{ fontSize: 11, color: "var(--teal)", fontWeight: 700 }}>{pick}</span>
-                  </div>
-                ) : (
-                  <span style={{ fontSize: 11, color: "var(--text-faint)", letterSpacing: "0.06em" }}>PICK →</span>
-                )}
-                <span className="flag" style={{ fontSize: 18 }}>{mAway?.flag || "🏳"}</span>
-              </button>
-            );
-          }) : (
-            <div style={{ padding: "12px 16px", fontSize: 12, color: "var(--text-faint)" }}>
-              {sortedMatches.length > 0
-                ? `Next matches on ${fmtDate(sortedMatches[0].date)} · make predictions below`
-                : "No matches scheduled yet"}
-            </div>
-          )}
-        </div>
+      {/* ─── USER STATS STRIP ─── */}
+      <div style={{ padding: "12px 20px 0", display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+        <StatTile label="Predictions" value={`${totalPicks}/${ALL_MATCHES.length}`} />
+        <StatTile label="Tickets" value={todayTickets + (state.groupTickets || 0)} accent="var(--orange)" icon={<TicketGlyph size={13} color="#FF9F1C" />} />
+        <StatTile label="Rank" value="#8" accent="var(--orange)" />
       </div>
 
       <div style={{ height: 14 }} />
 
       {/* ─── DAILY MATCHDAY POOL ─── */}
       <DailyPoolCard state={state} actions={actions} todayMatchCount={todayMatches.length} todayPredictedCount={todayPredicted.length} />
-
-      {/* stats strip */}
-      <div style={{ padding: "20px 20px 0", display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
-        <StatTile label="Picks" value={`${totalPicks}/${ALL_MATCHES.length}`} />
-        <StatTile label="Correct" value={correctCount} accent="var(--teal)" />
-        <StatTile label="Rank" value="#8" accent="var(--orange)" />
-      </div>
 
       {/* ─── PROJECTED REWARD CARD ───────────────────── */}
       <div style={{ padding: "20px 20px 0" }}>
@@ -401,10 +328,12 @@ const HomeScreen = ({ state, actions }) => {
   );
 };
 
-const StatTile = ({ label, value, accent = "var(--text)" }) => (
+const StatTile = ({ label, value, accent = "var(--text)", icon }) => (
   <div className="card" style={{ padding: "12px 14px" }}>
     <div style={{ fontSize: 10, color: "var(--text-faint)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 6 }}>{label}</div>
-    <div className="h-lg num" style={{ color: accent }}>{value}</div>
+    <div className="h-lg num" style={{ color: accent, display: "flex", alignItems: "center", gap: 5 }}>
+      {icon}{value}
+    </div>
   </div>
 );
 
