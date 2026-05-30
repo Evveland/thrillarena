@@ -258,7 +258,7 @@ const PoolsScreen = ({ state, actions }) => {
       <ScreenHeader
         eyebrow="Prize pools"
         title="Win every day"
-        right={<StatusPills energy={state.energy} tokens={state.tokens}
+        right={<StatusPills energy={state.energy}
           boost={state.boost} onBoostClick={actions.openBoostHub} />}
       />
 

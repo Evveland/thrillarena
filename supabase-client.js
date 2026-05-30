@@ -203,6 +203,13 @@
     if (error) console.warn("[SupaDB] saveTask:", error.message);
   }
 
+  // ── Leaderboard ───────────────────────────────────────────
+  async function loadLeaderboard(limit = 50) {
+    const { data, error } = await db.rpc("get_leaderboard", { limit_count: limit });
+    if (error) console.warn("[SupaDB] leaderboard:", error.message);
+    return data || [];
+  }
+
   window.SupaDB = {
     get db() { return db; },
     initUser,
@@ -213,5 +220,6 @@
     recordEnergy,
     saveDeposit,
     saveTask,
+    loadLeaderboard,
   };
 })();

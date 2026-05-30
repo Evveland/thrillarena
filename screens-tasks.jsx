@@ -6,7 +6,7 @@ const TasksScreen = ({ state, actions }) => {
       <ScreenHeader
         eyebrow="Earn energy"
         title="Tasks Hub"
-        right={<StatusPills energy={energy} tokens={tokens}
+        right={<StatusPills energy={energy}
           boost={state.boost} onBoostClick={actions.openBoostHub} />}
       />
 

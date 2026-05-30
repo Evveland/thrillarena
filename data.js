@@ -22,51 +22,11 @@ const TASKS = [
 ];
 
 // ─── LEADERBOARDS ─────────────────────────────────────────
-const LEADERBOARD = [
-  { rank: 1,  name: "@thrillseeker",   score: 2480, you: false, avatar: "T", color: "#FF9F1C", country: "MEX", mult: 5.0 },
-  { rank: 2,  name: "@aceofspades",    score: 2410, you: false, avatar: "A", color: "#FF4D67", country: "ARG", mult: 3.0 },
-  { rank: 3,  name: "@brackbuster",    score: 2380, you: false, avatar: "B", color: "#5DEDA5", country: "USA", mult: 2.0 },
-  { rank: 4,  name: "@megamesi",       score: 2310, you: false, avatar: "M", color: "#A78BFA", country: "ARG", mult: 2.0 },
-  { rank: 5,  name: "@golazo_dao",     score: 2240, you: false, avatar: "G", color: "#22D3EE", country: "BRA", mult: 1.5 },
-  { rank: 6,  name: "@stoppage_time",  score: 2180, you: false, avatar: "S", color: "#F472B6", country: "ENG", mult: 1.5 },
-  { rank: 7,  name: "@var.check",      score: 2120, you: false, avatar: "V", color: "#FBBF24", country: "ESP", mult: 1.5 },
-  { rank: 8,  name: "@you",            score: 2080, you: true,  avatar: "Y", color: "#5DEDA5", country: "MEX", mult: 1.0 },
-  { rank: 9,  name: "@hat_trick",      score: 2040, you: false, avatar: "H", color: "#10B981", country: "POR", mult: 1.25 },
-  { rank: 10, name: "@nutmeg_king",    score: 1990, you: false, avatar: "N", color: "#F97316", country: "NED", mult: 1.25 },
-];
-
-// Friends — invite-based; smaller list, mix of online/offline
-const FRIENDS = [
-  { rank: 1, name: "@diegokicks",   score: 2240, avatar: "D", color: "#A78BFA", online: true,  country: "ARG", relation: "from invite", mult: 2.0 },
-  { rank: 2, name: "@pixelpenalty", score: 2150, avatar: "P", color: "#22D3EE", online: true,  country: "USA", relation: "Telegram contact", mult: 1.5 },
-  { rank: 3, name: "@you",          score: 2080, avatar: "Y", color: "#5DEDA5", online: true,  country: "MEX", relation: "", you: true, mult: 1.0 },
-  { rank: 4, name: "@goalden_era",  score: 1960, avatar: "G", color: "#FFD60A", online: false, country: "BRA", relation: "Telegram contact", mult: 1.25 },
-  { rank: 5, name: "@chip_shot",    score: 1820, avatar: "C", color: "#F472B6", online: true,  country: "ENG", relation: "from invite", mult: 1.0 },
-  { rank: 6, name: "@rabona_rey",   score: 1740, avatar: "R", color: "#FF9F1C", online: false, country: "ESP", relation: "Telegram contact", mult: 1.0 },
-  { rank: 7, name: "@offside.io",   score: 1610, avatar: "O", color: "#10B981", online: true,  country: "MEX", relation: "from invite", mult: 1.0 },
-  { rank: 8, name: "@cleansheet",   score: 1490, avatar: "C", color: "#F97316", online: false, country: "ITA", relation: "Telegram contact", mult: 1.0 },
-];
-
-// Country leaderboard (aggregate score across all members of that country)
-const COUNTRIES = [
-  { code: "USA", name: "United States",   flag: "🇺🇸", players: 184320, totalScore: 318420000, avgScore: 1727 },
-  { code: "MEX", name: "Mexico",          flag: "🇲🇽", players: 152840, totalScore: 268940000, avgScore: 1759 },
-  { code: "BRA", name: "Brazil",          flag: "🇧🇷", players: 121060, totalScore: 217850000, avgScore: 1799 },
-  { code: "ARG", name: "Argentina",       flag: "🇦🇷", players: 98430,  totalScore: 184230000, avgScore: 1872 },
-  { code: "ESP", name: "Spain",           flag: "🇪🇸", players: 76250,  totalScore: 132410000, avgScore: 1737 },
-  { code: "GBR", name: "United Kingdom",  flag: "🇬🇧", players: 64190,  totalScore: 109820000, avgScore: 1710 },
-  { code: "COL", name: "Colombia",        flag: "🇨🇴", players: 54320,  totalScore: 93870000,  avgScore: 1728 },
-  { code: "FRA", name: "France",          flag: "🇫🇷", players: 49860,  totalScore: 84920000,  avgScore: 1703 },
-  { code: "GER", name: "Germany",         flag: "🇩🇪", players: 42180,  totalScore: 71490000,  avgScore: 1695 },
-  { code: "POR", name: "Portugal",        flag: "🇵🇹", players: 33240,  totalScore: 57820000,  avgScore: 1740 },
-  { code: "ITA", name: "Italy",           flag: "🇮🇹", players: 28150,  totalScore: 47210000,  avgScore: 1678 },
-  { code: "NED", name: "Netherlands",     flag: "🇳🇱", players: 24830,  totalScore: 42010000,  avgScore: 1692 },
-  { code: "JPN", name: "Japan",           flag: "🇯🇵", players: 22610,  totalScore: 36820000,  avgScore: 1628 },
-  { code: "KOR", name: "South Korea",     flag: "🇰🇷", players: 18920,  totalScore: 30190000,  avgScore: 1596 },
-];
-
-// Your country
-const YOUR_COUNTRY = "MEX";
+// Populated at runtime from Supabase via SupaDB.loadLeaderboard()
+const LEADERBOARD = [];
+const FRIENDS     = [];
+const COUNTRIES   = [];
+const YOUR_COUNTRY = null;
 
 // ─── SPIN WHEEL ───────────────────────────────────────────
 const WHEEL_SEGMENTS = [

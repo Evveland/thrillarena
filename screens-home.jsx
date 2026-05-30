@@ -159,7 +159,8 @@ const HomeScreen = ({ state, actions }) => {
   const todayTickets  = state.dailyTickets || 0;
 
   const totalPicks = Object.keys(predictions).length;
-  const correctCount = Math.floor(totalPicks * 0.65); // mock
+  // User's rank from live leaderboard
+  const myRank = state.leaderboard?.find(u => u.id === state.dbUser?.id)?.rank ?? "—";
 
   return (
     <>
@@ -186,7 +187,7 @@ const HomeScreen = ({ state, actions }) => {
             </div>
           );
         })()}
-        <StatusPills energy={energy} tokens={tokens}
+        <StatusPills energy={energy}
           boost={state.boost} onBoostClick={actions.openBoostHub} />
       </div>
 
@@ -249,7 +250,7 @@ const HomeScreen = ({ state, actions }) => {
       <div style={{ padding: "12px 20px 0", display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
         <StatTile label="Predictions" value={`${totalPicks}/${ALL_MATCHES.length}`} />
         <StatTile label="Tickets" value={todayTickets + (state.groupTickets || 0)} accent="var(--orange)" icon={<TicketGlyph size={13} color="#FF9F1C" />} />
-        <StatTile label="Rank" value="#8" accent="var(--orange)" />
+        <StatTile label="Rank" value={myRank === "—" ? "—" : `#${myRank}`} accent="var(--orange)" />
       </div>
 
       <div style={{ height: 14 }} />
@@ -259,7 +260,7 @@ const HomeScreen = ({ state, actions }) => {
 
       {/* ─── PROJECTED REWARD CARD ───────────────────── */}
       <div style={{ padding: "20px 20px 0" }}>
-        <ProjectionCard rank={8} score={2080} userMult={state.boost.multiplier}
+        <ProjectionCard rank={myRank} score={totalPicks} userMult={state.boost.multiplier}
           onView={() => actions.goto("leaderboard")}
           onBoost={() => actions.openBoostHub()}
           onHowToWin={() => actions.openHowToWin()} />
@@ -295,34 +296,48 @@ const HomeScreen = ({ state, actions }) => {
             All →
           </button>
         </div>
-        <div className="card" style={{ padding: 4 }}>
-          {LEADERBOARD.slice(0, 4).map((u, i) => (
-            <div key={u.rank} style={{
-              display: "flex", alignItems: "center", gap: 12,
-              padding: "10px 14px",
-              borderBottom: i < 3 ? "1px solid var(--line-soft)" : "none",
-              background: u.you ? "rgba(93,237,165,0.07)" : "transparent",
-              borderRadius: u.you ? 14 : 0,
-            }}>
-              <div className="num" style={{ width: 18, color: u.rank <= 3 ? "var(--gold)" : "var(--text-faint)", fontWeight: 700, fontSize: 13 }}>
-                {u.rank}
-              </div>
-              <div style={{
-                width: 28, height: 28, borderRadius: 8, flexShrink: 0,
-                background: u.color, color: "#0A0E1C",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                fontFamily: "var(--display)", fontSize: 14,
-              }}>{u.avatar}</div>
-              <div style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: 600, color: u.you ? "var(--teal)" : "var(--text)", display: "flex", alignItems: "center", gap: 6 }}>
-                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{u.name}</span>
-                <MultiplierBadge mult={u.mult} />
-              </div>
-              <div className="num" style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}>
-                {u.score.toLocaleString()}
-              </div>
-            </div>
-          ))}
-        </div>
+        {(state.leaderboard || []).length === 0 ? (
+          <div style={{
+            padding: "18px 16px", borderRadius: 14,
+            background: "rgba(255,255,255,0.03)", border: "1px dashed var(--line-soft)",
+            fontSize: 12, color: "var(--text-faint)", textAlign: "center",
+          }}>
+            No rankings yet — be the first to predict!
+          </div>
+        ) : (
+          <div className="card" style={{ padding: 4 }}>
+            {(state.leaderboard || []).slice(0, 4).map((u, i) => {
+              const isYou = state.dbUser?.id === u.id;
+              const initial = (u.display_name || u.username || "?")[0].toUpperCase();
+              const avatarColors = ["#FF9F1C","#FF4D67","#5DEDA5","#A78BFA","#22D3EE","#FFD60A","#F472B6","#10B981"];
+              return (
+                <div key={u.id} style={{
+                  display: "flex", alignItems: "center", gap: 12,
+                  padding: "10px 14px",
+                  borderBottom: i < 3 ? "1px solid var(--line-soft)" : "none",
+                  background: isYou ? "rgba(93,237,165,0.07)" : "transparent",
+                  borderRadius: isYou ? 14 : 0,
+                }}>
+                  <div className="num" style={{ width: 18, color: Number(u.rank) <= 3 ? "var(--gold)" : "var(--text-faint)", fontWeight: 700, fontSize: 13 }}>{u.rank}</div>
+                  <div style={{
+                    width: 28, height: 28, borderRadius: 8, flexShrink: 0,
+                    background: avatarColors[i % avatarColors.length], color: "#0A0E1C",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontFamily: "var(--display)", fontSize: 14,
+                  }}>{initial}</div>
+                  <div style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: 600, color: isYou ? "var(--teal)" : "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {u.username ? `@${u.username}` : (u.display_name || "Player")}
+                    {isYou && <span style={{ marginLeft: 6, fontSize: 10, color: "var(--teal)" }}>YOU</span>}
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                    <TicketGlyph size={12} color="var(--orange)" />
+                    <span className="num" style={{ fontSize: 13, color: "var(--orange)" }}>{Number(u.total_tickets)}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </>
   );

@@ -1,7 +1,9 @@
 // ─── LEADERBOARD ──────────────────────────────────────────
 const LeaderboardScreen = ({ state, actions }) => {
   const [scope, setScope] = React.useState("global");
-  const podium = LEADERBOARD.slice(0, 3);
+  // Use live data from Supabase (loaded in app.jsx, passed via state)
+  const liveBoard  = state.leaderboard || [];
+  const podium     = liveBoard.slice(0, 3);
   const TICKETS_BY_KEY = {
     daily:  state.dailyTickets || 0,
     group:  state.groupTickets || 0,
@@ -18,7 +20,7 @@ const LeaderboardScreen = ({ state, actions }) => {
       <ScreenHeader
         eyebrow="XP rankings · social board"
         title="Leaderboard"
-        right={<StatusPills energy={state.energy} tokens={state.tokens}
+        right={<StatusPills energy={state.energy}
           boost={state.boost} onBoostClick={actions.openBoostHub} />}
       />
 
@@ -139,63 +141,81 @@ const LeaderboardScreen = ({ state, actions }) => {
         </div>
       </div>
 
-      {/* podium */}
-      <div style={{ padding: "8px 20px 16px" }}>
-        <div className="eyebrow" style={{ marginBottom: 10 }}>Live podium</div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1.15fr 1fr", gap: 8, alignItems: "end" }}>
-          <PodiumStep user={podium[1]} place={2} height={120} color="#C0C0C0" />
-          <PodiumStep user={podium[0]} place={1} height={150} color="#FFD60A" />
-          <PodiumStep user={podium[2]} place={3} height={100} color="#CD7F32" />
-        </div>
-      </div>
-
-      {/* full list */}
+      {/* Live rankings */}
       <div style={{ padding: "0 20px" }}>
-        <div className="eyebrow" style={{ marginBottom: 10 }}>Rank · 4 → 10</div>
-        <div className="card" style={{ padding: 4 }}>
-          {LEADERBOARD.slice(3).map((u, i, arr) => (
-            <div key={u.rank} style={{
-              display: "flex", alignItems: "center", gap: 12,
-              padding: "12px 14px",
-              borderBottom: i < arr.length - 1 ? "1px solid var(--line-soft)" : "none",
-              background: u.you ? "linear-gradient(90deg, rgba(93,237,165,0.12), rgba(93,237,165,0.02))" : "transparent",
-              borderRadius: u.you ? 14 : 0,
-            }}>
-              <div className="num" style={{ width: 22, color: "var(--text-faint)", fontWeight: 700, fontSize: 13 }}>
-                {u.rank}
-              </div>
-              <div style={{
-                width: 34, height: 34, borderRadius: 10, flexShrink: 0,
-                background: u.color, color: "#0A0E1C",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                fontFamily: "var(--display)", fontSize: 16,
-                border: u.you ? "2px solid var(--teal)" : "none",
-              }}>{u.avatar}</div>
-              <div style={{ flex: 1 }}>
-                <div style={{
-                  fontSize: 14, fontWeight: 700,
-                  color: u.you ? "var(--teal)" : "var(--text)",
-                  display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap",
-                }}>
-                  <span>{u.name}</span>
-                  <MultiplierBadge mult={u.mult} />
-                  {u.you && <span style={{ fontSize: 10, padding: "2px 6px", borderRadius: 999, background: "rgba(93,237,165,0.2)", color: "var(--teal)", letterSpacing: "0.06em" }}>YOU</span>}
-                </div>
-                <div style={{ fontSize: 11, color: "var(--text-faint)", marginTop: 2 }}>
-                  {u.score >= 1200 ? "🔥 Hot streak" : "Climbing"}
-                </div>
-              </div>
-              <div style={{ textAlign: "right" }}>
-                <div className="num" style={{ fontFamily: "var(--display)", fontSize: 18 }}>
-                  {u.score.toLocaleString()}
-                </div>
-                <div style={{ fontSize: 10, color: "var(--text-faint)", letterSpacing: "0.06em", textTransform: "uppercase", marginTop: 2 }}>
-                  pts
-                </div>
-              </div>
-            </div>
-          ))}
+        <div className="eyebrow" style={{ marginBottom: 10 }}>
+          {liveBoard.length > 0 ? `Top ${liveBoard.length} players` : "Rankings"}
         </div>
+
+        {liveBoard.length === 0 ? (
+          /* ── Empty state – day 1 ── */
+          <div style={{
+            padding: "32px 20px", textAlign: "center",
+            borderRadius: 18, background: "rgba(255,255,255,0.03)",
+            border: "1px dashed var(--line-soft)",
+          }}>
+            <div style={{ fontSize: 36, marginBottom: 12 }}>🏆</div>
+            <div className="h-md" style={{ marginBottom: 8 }}>No rankings yet</div>
+            <div style={{ fontSize: 13, color: "var(--text-dim)", lineHeight: 1.5, maxWidth: 260, margin: "0 auto 20px" }}>
+              Be the first to predict! Rankings appear once players start making picks.
+            </div>
+            <button className="btn btn-primary" onClick={() => actions.goto("bracket")}
+              style={{ fontSize: 13 }}>
+              Start predicting →
+            </button>
+          </div>
+        ) : (
+          <div className="card" style={{ padding: 4 }}>
+            {liveBoard.map((u, i, arr) => {
+              const isYou = state.dbUser?.id === u.id;
+              const initial = (u.display_name || u.username || "?")[0].toUpperCase();
+              const avatarColors = ["#FF9F1C","#FF4D67","#5DEDA5","#A78BFA","#22D3EE","#FFD60A","#F472B6","#10B981"];
+              const color = avatarColors[i % avatarColors.length];
+              return (
+                <div key={u.id} style={{
+                  display: "flex", alignItems: "center", gap: 12,
+                  padding: "12px 14px",
+                  borderBottom: i < arr.length - 1 ? "1px solid var(--line-soft)" : "none",
+                  background: isYou ? "linear-gradient(90deg, rgba(93,237,165,0.12), rgba(93,237,165,0.02))" : "transparent",
+                  borderRadius: isYou ? 14 : 0,
+                }}>
+                  <div className="num" style={{ width: 22, color: Number(u.rank) <= 3 ? "var(--gold)" : "var(--text-faint)", fontWeight: 700, fontSize: 13 }}>
+                    {u.rank}
+                  </div>
+                  <div style={{
+                    width: 34, height: 34, borderRadius: 10, flexShrink: 0,
+                    background: color, color: "#0A0E1C",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontFamily: "var(--display)", fontSize: 16,
+                    border: isYou ? "2px solid var(--teal)" : "none",
+                  }}>{initial}</div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: isYou ? "var(--teal)" : "var(--text)", display: "flex", alignItems: "center", gap: 6 }}>
+                      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {u.username ? `@${u.username}` : (u.display_name || "Player")}
+                      </span>
+                      {isYou && <span style={{ fontSize: 10, padding: "2px 6px", borderRadius: 999, background: "rgba(93,237,165,0.2)", color: "var(--teal)", letterSpacing: "0.06em", flexShrink: 0 }}>YOU</span>}
+                    </div>
+                    <div style={{ fontSize: 11, color: "var(--text-faint)", marginTop: 2 }}>
+                      {u.total_predictions} pick{u.total_predictions !== 1 ? "s" : ""} made
+                    </div>
+                  </div>
+                  <div style={{ textAlign: "right", flexShrink: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 4, justifyContent: "flex-end" }}>
+                      <TicketGlyph size={13} color="var(--orange)" />
+                      <span className="num" style={{ fontFamily: "var(--display)", fontSize: 18, color: "var(--orange)" }}>
+                        {Number(u.total_tickets).toLocaleString()}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: 10, color: "var(--text-faint)", letterSpacing: "0.06em", textTransform: "uppercase", marginTop: 2 }}>
+                      tickets
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
       </>}
 

@@ -118,7 +118,7 @@ const FlagBadge = ({ team, size = 36 }) => {
 };
 
 // ─── Status pill (top-right header) ───────────────────────
-const StatusPills = ({ energy, tokens, boost = null, onBoostClick }) => (
+const StatusPills = ({ energy, boost = null, onBoostClick }) => (
   <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
     {boost && (
       <MultiplierChip mult={boost.multiplier}
@@ -128,10 +128,6 @@ const StatusPills = ({ energy, tokens, boost = null, onBoostClick }) => (
     <div className="chip energy num">
       <BoltIcon size={13} color="#FF9F1C" />
       <span>{energy}</span>
-    </div>
-    <div className="chip token num">
-      <TokenCoin size={13} />
-      <span>{tokens.toLocaleString()}</span>
     </div>
   </div>
 );

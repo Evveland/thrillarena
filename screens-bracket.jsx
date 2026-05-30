@@ -9,7 +9,7 @@ const BracketScreen = ({ state, actions }) => {
       <ScreenHeader
         eyebrow="WC 2026 · 48 teams"
         title="The Bracket"
-        right={<StatusPills energy={state.energy} tokens={state.tokens}
+        right={<StatusPills energy={state.energy}
           boost={state.boost} onBoostClick={actions.openBoostHub} />}
       />
 

@@ -32,12 +32,12 @@ const DEFAULT_BOOST = {
 const DEFAULT_POOL_STATE = {
   dailyActions: { predictions: 0, thrillVisits: 0, thrillTasks: 0 },
   dailyTickets:  0,
-  groupTickets:  2,   // mock: 2 correct group picks earlier this week
+  groupTickets:  0,
   r32Tickets:    0,
   r16Tickets:    0,
   qfTickets:     0,
   sfTickets:     0,
-  finalTickets:  5,   // mock: tickets from Thrill registration
+  finalTickets:  0,
   // Legacy — referenced by older copy paths; safe to keep.
   weeklyTickets: 4,
   // "Yesterday you won" reveal — fired once on return to drive return visits.
@@ -71,7 +71,6 @@ function App() {
   const [screen, setScreen] = React.useState("onboarding");
   const [modal, setModal] = React.useState(null);
   const [energy, setEnergy] = React.useState(tweaks.startingEnergy);
-  const [tokens, setTokens] = React.useState(125);
   const [predictions, setPredictions] = React.useState({});
   const [picksMade, setPicksMade] = React.useState(0);
   const [tasksDone, setTasksDone] = React.useState({});
@@ -121,6 +120,16 @@ function App() {
 
   // ── Prize pool state ──────────────────────────────────
   const [poolState, setPoolState] = React.useState(DEFAULT_POOL_STATE);
+
+  // ── Leaderboard ───────────────────────────────────────
+  const [leaderboard, setLeaderboard] = React.useState([]);
+  React.useEffect(() => {
+    if (!window.SupaDB) return;
+    SupaDB.loadLeaderboard(50).then(rows => setLeaderboard(rows));
+    // Refresh every 60 s while the app is open
+    const t = setInterval(() => SupaDB.loadLeaderboard(50).then(setLeaderboard), 60000);
+    return () => clearInterval(t);
+  }, []);
 
   // ── Boost / deposit state ─────────────────────────────
   const [boostRaw, setBoostRaw] = React.useState(DEFAULT_BOOST);
@@ -234,7 +243,6 @@ function App() {
       }
     },
     addEnergy: (n) => setEnergy(e => Math.min(200, e + n)),
-    addTokens: (n) => setTokens(t => t + n),
 
     // Tasks router — opens the right modal per task type.
     doTask: (id) => {
@@ -429,7 +437,8 @@ function App() {
   };
 
   const state = {
-    energy, tokens, predictions, freePicksLeft, energyPerPick, tasksDone,
+    energy, predictions, freePicksLeft, energyPerPick, tasksDone,
+    leaderboard,
     wallet, channelJoined, invitesSent, notifPrefs, boost, dbUser,
     boostFirstFlow: tweaks.boostFirstFlow,
     // Prize-pool slice — one ticket count per raffle layer
