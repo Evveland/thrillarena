@@ -656,24 +656,39 @@ const PodiumStep = ({ user, place, height, color }) => (
 
 // ─── PROFILE / WALLET ─────────────────────────────────────
 const ProfileScreen = ({ state, actions }) => {
-  const { energy, tokens, predictions, wallet, channelJoined, invitesSent, notifPrefs } = state;
-  const totalPicks = Object.keys(predictions).length;
-  const accuracy = totalPicks > 0 ? 100 : 0;
-  const isConnected = !!wallet;
+  const { energy, predictions, wallet, channelJoined, invitesSent, notifPrefs } = state;
+  const totalPicks   = Object.keys(predictions || {}).length;
+  const isConnected  = !!wallet;
+
+  // Real user data
+  const tg           = window.Telegram?.WebApp?.initDataUnsafe?.user || {};
+  const username     = state.dbUser?.username    || tg.username    || null;
+  const displayName  = state.dbUser?.display_name|| tg.first_name  || "Predictor";
+  const label        = username ? `@${username}` : displayName;
+  const initial      = (displayName || username || "?")[0].toUpperCase();
+  const joinedDate   = state.dbUser?.created_at
+    ? new Date(state.dbUser.created_at).toLocaleDateString("en", { month: "short", year: "numeric" })
+    : "Jun 2026";
+
+  // Stats from leaderboard
+  const myEntry      = (state.leaderboard || []).find(u => u.id === state.dbUser?.id);
+  const myRank       = myEntry ? `#${myEntry.rank}` : "—";
+  const myTickets    = myEntry ? Number(myEntry.total_tickets) : 0;
+  const myCorrect    = myEntry ? Number(myEntry.correct_predictions || 0) : 0;
+  const accuracy     = totalPicks > 0 && myCorrect > 0
+    ? Math.round((myCorrect / totalPicks) * 100) : 0;
 
   return (
     <>
       <ScreenHeader
-        eyebrow="Profile · Wallet"
-        title="@you"
+        eyebrow="My Profile"
+        title={label}
         right={
-          <button className="btn"
-            onClick={() => actions.goto && actions.openWalletConnect && null}
-            style={{
-              width: 40, height: 40, borderRadius: 999,
-              background: "var(--card)", border: "1px solid var(--line-soft)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-            }}>
+          <button className="btn" onClick={actions.openNotifyOptIn} style={{
+            width: 40, height: 40, borderRadius: 999,
+            background: "var(--card)", border: "1px solid var(--line-soft)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
             <Icon name="settings" size={20} color="var(--text-dim)" />
           </button>
         }
@@ -683,18 +698,23 @@ const ProfileScreen = ({ state, actions }) => {
       <div style={{ padding: "0 20px 16px", display: "flex", alignItems: "center", gap: 14 }}>
         <div style={{
           width: 72, height: 72, borderRadius: 22,
-          background: "linear-gradient(135deg, var(--teal), var(--teal-d))",
+          background: "linear-gradient(135deg, var(--teal), #3fcb85)",
           color: "#0A0E1C",
           display: "flex", alignItems: "center", justifyContent: "center",
           fontFamily: "var(--display)", fontSize: 36,
           boxShadow: "0 8px 24px var(--teal-glow)",
-        }}>Y</div>
+        }}>{initial}</div>
         <div style={{ flex: 1 }}>
-          <div className="h-md">Rookie predictor</div>
-          <div style={{ fontSize: 12, color: "var(--text-dim)", marginTop: 4 }}>Telegram · Joined Jun 2026</div>
-          <div style={{ marginTop: 8, display: "flex", gap: 6 }}>
-            <span className="chip teal">🔥 Day 3</span>
-            <span className="chip">Rank #8</span>
+          <div className="h-md">{displayName}</div>
+          <div style={{ fontSize: 12, color: "var(--text-dim)", marginTop: 4 }}>Joined {joinedDate}</div>
+          <div style={{ marginTop: 8, display: "flex", gap: 6, flexWrap: "wrap" }}>
+            {myRank !== "—" && <span className="chip teal">Rank {myRank}</span>}
+            <span className="chip">{energy} ⚡</span>
+            {state.dbUser?.telegram_id && (
+              <span className="chip" style={{ fontSize: 10, color: "var(--text-faint)" }}>
+                ID {state.dbUser.telegram_id}
+              </span>
+            )}
           </div>
         </div>
       </div>
@@ -718,11 +738,11 @@ const ProfileScreen = ({ state, actions }) => {
               </div>
             </div>
             <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 4 }}>
-              <div className="h-big token-shimmer num">{tokens.toLocaleString()}</div>
-              <div style={{ fontFamily: "var(--display)", fontSize: 18, color: "var(--teal)" }}>USDT</div>
+              <div className="h-big token-shimmer num">{myTickets.toLocaleString()}</div>
+              <div style={{ fontFamily: "var(--display)", fontSize: 18, color: "var(--teal)" }}>tickets</div>
             </div>
             <div style={{ fontSize: 12, color: "var(--text-dim)", marginBottom: 10 }}>
-              Reserved · Payout: <span className="num" style={{ color: "var(--teal)" }}>Jul 19</span>
+              Total raffle tickets · Payout date: <span className="num" style={{ color: "var(--teal)" }}>Jul 19</span>
             </div>
             {/* TON address chip */}
             <div style={{
@@ -759,7 +779,7 @@ const ProfileScreen = ({ state, actions }) => {
                   <div className="eyebrow" style={{ color: "var(--gold)", whiteSpace: "nowrap", marginBottom: 6 }}>⚠ Wallet not linked</div>
                   <div className="h-md" style={{ marginBottom: 6 }}>Connect TON to claim your prize</div>
                   <div style={{ fontSize: 12, color: "var(--text-dim)", lineHeight: 1.45 }}>
-                    Your <b style={{ color: "var(--text)" }}>{tokens.toLocaleString()} USDT</b> is reserved.
+                    Connect your TON wallet to receive prize payouts on Jul 19.
                     Without a wallet, the Jul 19 payout cannot reach you.
                   </div>
                 </div>
@@ -829,49 +849,30 @@ const ProfileScreen = ({ state, actions }) => {
       <div style={{ padding: "0 20px 16px" }}>
         <div className="eyebrow" style={{ marginBottom: 10 }}>Your tournament</div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-          <StatBig label="Picks made" value={`${totalPicks}/104`} sub="6 stages · 48 teams" />
-          <StatBig label="Accuracy" value={`${accuracy}%`} sub={`${totalPicks} correct`} accent="var(--teal)" />
-          <StatBig label="Points" value="2,080" sub="+100 last pick" accent="var(--orange)" />
-          <StatBig label="Best streak" value="3" sub="games in a row" />
+          <StatBig label="Picks made" value={`${totalPicks}/${ALL_MATCHES.length}`} sub="6 stages" />
+          <StatBig label="Accuracy" value={accuracy > 0 ? `${accuracy}%` : "—"} sub={`${myCorrect} correct`} accent="var(--teal)" />
+          <StatBig label="Tickets" value={myTickets.toLocaleString()} sub="across all raffles" accent="var(--orange)" />
+          <StatBig label="Referrals" value={invitesSent || 0} sub={`+${(invitesSent || 0) * 30} ⚡ earned`} />
         </div>
       </div>
 
-      {/* recent picks */}
-      <div style={{ padding: "0 20px" }}>
-        <div className="eyebrow" style={{ marginBottom: 10 }}>Recent activity</div>
-        <div className="card" style={{ padding: 4 }}>
-          {[
-            { kind: "pick", text: "Locked Argentina vs Mexico", value: "FREE", time: "2m ago" },
-            { kind: "earn", text: "Joined Telegram channel", value: "+20 ⚡", time: "8m ago" },
-            { kind: "earn", text: "Daily spin reward", value: "+10 ⚡", time: "1h ago" },
-            { kind: "airdrop", text: "Welcome bonus USDT", value: "+125", time: "1d ago" },
-          ].map((a, i, arr) => (
-            <div key={i} style={{
-              display: "flex", alignItems: "center", gap: 12,
-              padding: "12px 14px",
-              borderBottom: i < arr.length - 1 ? "1px solid var(--line-soft)" : "none",
-            }}>
-              <div style={{
-                width: 32, height: 32, borderRadius: 10, flexShrink: 0,
-                background: a.kind === "pick" ? "rgba(93,237,165,0.15)" : a.kind === "earn" ? "rgba(255,159,28,0.15)" : "rgba(255,214,10,0.15)",
-                display: "flex", alignItems: "center", justifyContent: "center",
-              }}>
-                {a.kind === "pick" && <Icon name="target" size={16} color="var(--teal)" />}
-                {a.kind === "earn" && <BoltIcon size={16} color="#FF9F1C" />}
-                {a.kind === "airdrop" && <TokenCoin size={18} />}
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 13, fontWeight: 600 }}>{a.text}</div>
-                <div style={{ fontSize: 11, color: "var(--text-faint)", marginTop: 2 }}>{a.time}</div>
-              </div>
-              <div className="num" style={{
-                fontFamily: "var(--display)", fontSize: 15,
-                color: a.kind === "pick" ? "var(--teal)" : a.kind === "earn" ? "var(--orange)" : "var(--gold)",
-              }}>{a.value}</div>
+      {/* boost status */}
+      {state.boost?.multiplier > 1 && (
+        <div style={{ padding: "0 20px 16px" }}>
+          <button className="btn" onClick={actions.openBoostHub} style={{
+            width: "100%", textAlign: "left", padding: "14px 16px",
+            borderRadius: 16, background: "rgba(255,77,103,0.08)",
+            border: "1px solid rgba(255,77,103,0.3)", display: "flex", alignItems: "center", gap: 12,
+          }}>
+            <div style={{ flex: 1 }}>
+              <div className="eyebrow" style={{ color: "#FF4D67", marginBottom: 4 }}>Active boost</div>
+              <div style={{ fontSize: 15, fontWeight: 700 }}>{fmtMult(state.boost.multiplier)} ticket multiplier</div>
+              <div style={{ fontSize: 11, color: "var(--text-faint)", marginTop: 2 }}>Applies to every correct prediction</div>
             </div>
-          ))}
+            <div style={{ fontFamily: "var(--display)", fontSize: 28, color: "#FF4D67" }}>{fmtMult(state.boost.multiplier)}</div>
+          </button>
         </div>
-      </div>
+      )}
     </>
   );
 };
