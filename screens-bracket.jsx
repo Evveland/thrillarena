@@ -479,11 +479,14 @@ const PredictModal = ({ matchId, state, actions, onClose }) => {
   const venue = match.venue ? VENUES[match.venue] : null;
 
   const isFree = freePicksLeft > 0 || !!currentPick;
-  const cost = isFree ? 0 : energyPerPick;
+  // Energy cost scales with confidence tier: ×1=10⚡, ×2=15⚡, ×3=20⚡
+  const confidenceTier   = confidence < 65 ? 1 : confidence < 80 ? 2 : 3;
+  const tierEnergyCost   = confidenceTier === 1 ? 10 : confidenceTier === 2 ? 15 : 20;
+  const cost             = isFree ? 0 : tierEnergyCost;
   const canConfirm = pick && home.resolved && away.resolved && (isFree || energy >= cost);
 
   // Confidence → base ticket yield for this prediction
-  const confidenceTickets = confidence < 65 ? 1 : confidence < 80 ? 2 : 3;
+  const confidenceTickets = confidenceTier;
   const boostMult = state.boost?.multiplier || 1;
   const effectiveTickets = confidenceTickets * boostMult;
 
@@ -591,9 +594,9 @@ const PredictModal = ({ matchId, state, actions, onClose }) => {
             {/* Ticket tier chips */}
             <div style={{ display: "flex", gap: 6 }}>
               {[
-                { label: "50–64%", tickets: 1, active: confidence < 65 },
-                { label: "65–79%", tickets: 2, active: confidence >= 65 && confidence < 80 },
-                { label: "80–100%", tickets: 3, active: confidence >= 80 },
+                { label: "50–64%", tickets: 1, energy: 10,  active: confidence < 65 },
+                { label: "65–79%", tickets: 2, energy: 15,  active: confidence >= 65 && confidence < 80 },
+                { label: "80–100%", tickets: 3, energy: 20, active: confidence >= 80 },
               ].map(tier => (
                 <div key={tier.label} style={{
                   flex: 1, padding: "6px 8px", borderRadius: 10, textAlign: "center",
@@ -604,7 +607,10 @@ const PredictModal = ({ matchId, state, actions, onClose }) => {
                   <div style={{ fontSize: 15, fontWeight: 700, fontFamily: "var(--display)", color: tier.active ? "var(--teal)" : "var(--text-faint)" }}>
                     ×{tier.tickets}
                   </div>
-                  <div style={{ fontSize: 9, color: tier.active ? "var(--teal)" : "var(--text-faint)", letterSpacing: "0.04em", marginTop: 2 }}>
+                  <div style={{ fontSize: 10, color: tier.active ? "var(--orange)" : "var(--text-faint)", letterSpacing: "0.04em", marginTop: 1, fontWeight: 700 }}>
+                    {tier.energy}⚡
+                  </div>
+                  <div style={{ fontSize: 9, color: tier.active ? "var(--teal)" : "var(--text-faint)", letterSpacing: "0.04em", marginTop: 1 }}>
                     {tier.label}
                   </div>
                 </div>

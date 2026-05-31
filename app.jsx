@@ -2,7 +2,7 @@
 const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
   "primary": "#5DEDA5",
   "accent": "#FF9F1C",
-  "energyPerPick": 10,
+  "energyPerPick": 10,  // base cost at 50-64% confidence; 15 at 65-79%, 20 at 80-100%
   "freePicks": 0,
   "tokenName": "USDT",
   "startingEnergy": 20,

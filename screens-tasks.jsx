@@ -136,7 +136,7 @@ const TasksScreen = ({ state, actions }) => {
         }}>
           <Icon name="info" size={16} color="var(--teal)" />
           <div>
-            Each prediction costs <b style={{ color: "var(--orange)" }}>⚡10</b>. You start with <b style={{ color: "var(--teal)" }}>20 ⚡</b> (2 picks).
+            Picks cost <b style={{ color: "var(--orange)" }}>10–20⚡</b> based on confidence (low/medium/high). You start with <b style={{ color: "var(--teal)" }}>20⚡</b> (1–2 picks).
             Invite friends for <b style={{ color: "var(--orange)" }}>+30 ⚡ each</b> — 1 invite = 3 more picks.
             Register on Thrill for a one-time <b style={{ color: "var(--orange)" }}>+30 ⚡</b>.
             {" "}Channel + wallet each give <b style={{ color: "var(--gold)" }}>+10 ⚡</b>.
