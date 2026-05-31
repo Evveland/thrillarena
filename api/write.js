@@ -99,27 +99,13 @@ module.exports = async function handler(req, res) {
           { id: userId, telegram_id: telegramId, username, display_name, referred_by }
         );
 
-        console.log("[write] upsert_user INSERT status:", ins.status, JSON.stringify(ins.data).slice(0,200));
-
         if (!ins.ok) {
-          // Conflict or other error — try PATCH (update existing row)
-          const patch = await sbQuery(
-            `${BASE}/rest/v1/users?id=eq.${userId}`,
-            SERVICE_KEY, "PATCH",
-            { username, display_name }
-          );
-          console.log("[write] upsert_user PATCH status:", patch.status, JSON.stringify(patch.data).slice(0,200));
+          // Conflict — update display info only (returning user)
+          await sbQuery(`${BASE}/rest/v1/users?id=eq.${userId}`, SERVICE_KEY, "PATCH", { username, display_name });
         }
 
-        // Fetch the user row
-        const get = await sbQuery(
-          `${BASE}/rest/v1/users?id=eq.${userId}&select=*`,
-          SERVICE_KEY, "GET"
-        );
+        const get = await sbQuery(`${BASE}/rest/v1/users?id=eq.${userId}&select=*`, SERVICE_KEY, "GET");
         const user = Array.isArray(get.data) ? get.data[0] : null;
-        console.log("[write] upsert_user GET result:", user ? "found" : "null");
-        // Return insert status for debugging
-        if (!user) return res.json({ ok: false, insertStatus: ins.status, insertError: ins.data, userId, telegramId });
         return res.json({ ok: true, user });
       }
 
