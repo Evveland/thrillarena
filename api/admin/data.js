@@ -1,7 +1,8 @@
-// GET /api/admin/data?section=kpis|users|raffles|predictions
-// Proxies to Supabase SECURITY DEFINER functions using the service role key.
+// GET  /api/admin/data?section=kpis|users|raffles|predictions
+// PATCH /api/admin/data?section=users   body: { id, ...fields }
+// DELETE /api/admin/data?section=users&id=<uuid>
+// Uses Supabase REST API directly (no SDK).
 const requireAdmin = require("./_auth");
-const { createClient } = require("@supabase/supabase-js");
 
 const CORS = {
   "Access-Control-Allow-Origin":  "*",
@@ -9,67 +10,87 @@ const CORS = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
 };
 
+const SB_URL = "https://zlslbgtuvjswkeeamxvb.supabase.co";
+
+function sbHeaders(key) {
+  return { "apikey": key, "Authorization": `Bearer ${key}`, "Content-Type": "application/json", "Prefer": "return=representation" };
+}
+
+async function sb(path, key, method = "GET", body = null) {
+  const opts = { method, headers: sbHeaders(key) };
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(`${SB_URL}${path}`, opts);
+  const text = await res.text();
+  try { return { ok: res.ok, status: res.status, data: JSON.parse(text) }; }
+  catch { return { ok: res.ok, status: res.status, data: text }; }
+}
+
+async function rpc(fn, key, params = {}) {
+  const res = await fetch(`${SB_URL}/rest/v1/rpc/${fn}`, {
+    method: "POST",
+    headers: sbHeaders(key),
+    body: JSON.stringify(params),
+  });
+  const text = await res.text();
+  try { return JSON.parse(text); } catch { return null; }
+}
+
 module.exports = async function handler(req, res) {
   Object.entries(CORS).forEach(([k, v]) => res.setHeader(k, v));
   if (req.method === "OPTIONS") return res.status(200).end();
   if (!requireAdmin(req, res)) return;
 
-  const db = createClient(
-    process.env.SUPABASE_URL      || "https://zlslbgtuvjswkeeamxvb.supabase.co",
-    process.env.SUPABASE_SERVICE_KEY,
-    { auth: { persistSession: false } }
-  );
+  const KEY = process.env.SUPABASE_SERVICE_KEY;
+  if (!KEY) return res.status(500).json({ error: "SUPABASE_SERVICE_KEY not set" });
 
-  const { section, search = "", offset = "0", limit = "50" } = req.query;
+  const { section, search = "", offset = "0", limit = "50", id } = req.query;
 
   try {
+    // ── GET ────────────────────────────────────────────────
     if (req.method === "GET") {
+
       if (section === "kpis") {
-        const { data, error } = await db.rpc("admin_kpis");
-        if (error) throw error;
-        return res.json(data);
+        const data = await rpc("admin_kpis", KEY);
+        return res.json(data || {});
       }
+
       if (section === "users") {
-        const { data, error } = await db.rpc("admin_users", {
+        const data = await rpc("admin_users", KEY, {
           p_search: search, p_offset: parseInt(offset), p_limit: parseInt(limit),
         });
-        if (error) throw error;
-        return res.json(data);
+        return res.json(data || { total: 0, rows: [] });
       }
+
       if (section === "raffles") {
-        const { data, error } = await db.rpc("admin_raffles");
-        if (error) throw error;
+        const data = await rpc("admin_raffles", KEY);
         return res.json(data || []);
       }
+
       if (section === "predictions") {
-        const { data, error } = await db.rpc("admin_predictions");
-        if (error) throw error;
-        return res.json(data);
+        const data = await rpc("admin_predictions", KEY);
+        return res.json(data || {});
       }
+
       return res.status(400).json({ error: "Unknown section" });
     }
 
-    // PATCH /api/admin/data?section=users  { id, ...fields }
+    // ── PATCH (update user) ────────────────────────────────
     if (req.method === "PATCH" && section === "users") {
-      const { id, ...fields } = req.body || {};
-      if (!id) return res.status(400).json({ error: "id required" });
-      const { error } = await db.from("users").update(fields).eq("id", id);
-      if (error) throw error;
+      const { id: uid, ...fields } = req.body || {};
+      if (!uid) return res.status(400).json({ error: "id required" });
+      const r = await sb(`/rest/v1/users?id=eq.${uid}`, KEY, "PATCH", fields);
+      if (!r.ok) return res.status(500).json({ error: r.data });
       return res.json({ ok: true });
     }
 
-    // DELETE /api/admin/data?section=users&id=<uuid>
+    // ── DELETE (delete user + cascade) ────────────────────
     if (req.method === "DELETE" && section === "users") {
-      const { id } = req.query;
       if (!id) return res.status(400).json({ error: "id required" });
-      await db.from("raffle_winners").delete().eq("user_id", id);
-      await db.from("ticket_ledger").delete().eq("user_id", id);
-      await db.from("energy_ledger").delete().eq("user_id", id);
-      await db.from("predictions").delete().eq("user_id", id);
-      await db.from("user_boosts").delete().eq("user_id", id);
-      await db.from("deposits").delete().eq("user_id", id);
-      await db.from("thrill_tasks").delete().eq("user_id", id);
-      await db.from("users").delete().eq("id", id);
+      // Delete in FK order
+      for (const table of ["raffle_winners","ticket_ledger","energy_ledger","predictions","user_boosts","deposits","thrill_tasks"]) {
+        await sb(`/rest/v1/${table}?user_id=eq.${id}`, KEY, "DELETE");
+      }
+      await sb(`/rest/v1/users?id=eq.${id}`, KEY, "DELETE");
       return res.json({ ok: true });
     }
 
