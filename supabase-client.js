@@ -59,55 +59,41 @@
 
   // ── User init ──────────────────────────────────────────
   async function initUser() {
-    const tg       = window.Telegram?.WebApp?.initDataUnsafe?.user || {};
-    const localId  = getLocalUserId();
-    const tgId     = tg.id ? Number(tg.id) : null;
+    const tg      = window.Telegram?.WebApp?.initDataUnsafe?.user || {};
+    const localId = getLocalUserId();
+    const tgId    = tg.id ? Number(tg.id) : null;
 
-    const result = await write("upsert_user", {
-      // Pass userId + telegramId explicitly so the server can identify the
-      // user even when TELEGRAM_BOT_TOKEN verification is unavailable.
-      userId:       localId,
-      telegramId:   tgId,
-      username:     tg.username   || null,
-      display_name: tg.first_name || null,
-      referred_by:  null,
-    });
-
-    // Parse referral from start_param
+    // Parse referral BEFORE the first write so the server can set
+    // referred_by on INSERT and trigger the energy award to the referrer.
     const startParam = window.Telegram?.WebApp?.initDataUnsafe?.start_param || "";
-    if (startParam.startsWith("ref_") && result?.user) {
-      const referrerId = startParam.slice(4);
-      if (/^\d+$/.test(referrerId) && String(referrerId) !== String(tg.id)) {
-        // Re-upsert with referral — only matters on first open
-        await write("upsert_user", {
-          username:     tg.username   || null,
-          display_name: tg.first_name || null,
-          referred_by:  telegramIdToUUID(Number(referrerId)),
-        });
+    let referrerTelegramId = null;
+    if (startParam.startsWith("ref_")) {
+      const rid = Number(startParam.slice(4));
+      if (!isNaN(rid) && rid > 0 && rid !== tgId) {
+        referrerTelegramId = rid;
+        console.log("[SupaDB] referred by telegram_id:", rid);
       }
     }
+
+    const result = await write("upsert_user", {
+      userId:             localId,
+      telegramId:         tgId,
+      username:           tg.username   || null,
+      display_name:       tg.first_name || null,
+      referrerTelegramId,   // server computes referred_by UUID & awards energy
+    });
 
     if (result?.user) {
       console.log("[SupaDB] user ready:", result.user.id, "telegram:", result.user.telegram_id);
       return result.user;
     }
-    // Fallback — return a minimal object so the app still boots
     const devId = localStorage.getItem("ta_dev_uuid") || (() => {
-      const id = "dev-" + Math.random().toString(36).slice(2,10);
+      const id = "dev-" + Math.random().toString(36).slice(2, 10);
       localStorage.setItem("ta_dev_uuid", id);
       return id;
     })();
-    console.warn("[SupaDB] write proxy failed — using local fallback. Set SUPABASE_SERVICE_KEY in Vercel.");
+    console.warn("[SupaDB] write proxy failed — using local fallback.");
     return { id: devId, telegram_id: null, energy_balance: 20 };
-  }
-
-  function telegramIdToUUID(telegramId) {
-    // Must match the formula in api/auth/telegram.js and api/write.js
-    const crypto = window.crypto;
-    if (!crypto?.subtle) return null;
-    // Sync version using a simple hash (same formula as server-side SHA-256)
-    // We can't do async here easily, so just return null for client-side referral parsing
-    return null;
   }
 
   // ── Load state (via proxy — uses service role for reads too) ───

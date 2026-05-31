@@ -105,11 +105,18 @@ module.exports = async function handler(req, res) {
 
       // ── Upsert user ─────────────────────────────────────
       case "upsert_user": {
-        const username     = payload.username     || tgUser.username    || null;
-        const display_name = payload.display_name || tgUser.first_name  || null;
-        const referred_by  = payload.referred_by  || null;
+        const username     = payload.username     || tgUser.username   || null;
+        const display_name = payload.display_name || tgUser.first_name || null;
 
-        // Try INSERT
+        // Compute referred_by UUID from referrerTelegramId (passed by client from start_param)
+        let referred_by = null;
+        if (payload.referrerTelegramId) {
+          referred_by = telegramIdToUUID(Number(payload.referrerTelegramId));
+          console.log("[write] referral detected:", payload.referrerTelegramId, "→", referred_by);
+        }
+
+        // Try INSERT — new user. The DB trigger award_referral_energy() fires
+        // on INSERT when referred_by IS NOT NULL, crediting the referrer +30⚡.
         const ins = await sbQuery(
           `${BASE}/rest/v1/users`,
           SERVICE_KEY, "POST",
@@ -117,8 +124,13 @@ module.exports = async function handler(req, res) {
         );
 
         if (!ins.ok) {
-          // Conflict — update display info only (returning user)
-          await sbQuery(`${BASE}/rest/v1/users?id=eq.${userId}`, SERVICE_KEY, "PATCH", { username, display_name });
+          // Conflict — existing user, update name only (don't overwrite referred_by)
+          await sbQuery(`${BASE}/rest/v1/users?id=eq.${userId}`, SERVICE_KEY, "PATCH",
+            { username, display_name });
+        } else if (referred_by) {
+          // Successful INSERT with referral — also reload referrer's energy
+          // so it reflects the +30⚡ awarded by the DB trigger
+          console.log("[write] new referred user inserted, trigger will award energy to", referred_by);
         }
 
         const get = await sbQuery(`${BASE}/rest/v1/users?id=eq.${userId}&select=*`, SERVICE_KEY, "GET");
