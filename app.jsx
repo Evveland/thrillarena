@@ -128,7 +128,9 @@ function App() {
   const [invitesSent, setInvitesSent] = React.useState(0);
   const [notifPrefs, setNotifPrefs] = React.useState(DEFAULT_NOTIF_PREFS);
   const [notification, setNotification] = React.useState(null);
-  const [notifyPrompted, setNotifyPrompted] = React.useState(false);
+  const [notifyPrompted, setNotifyPrompted] = React.useState(
+    () => localStorage.getItem("ta_notify_prompted") === "1"
+  );
 
   // ── Prize pool state ──────────────────────────────────
   const [poolState, setPoolState] = React.useState(DEFAULT_POOL_STATE);
@@ -251,6 +253,7 @@ function App() {
       // After the FIRST pick, prompt for notifications (re-engagement hook).
       if (wasNew && !notifyPrompted && !notifPrefs.enabled) {
         setNotifyPrompted(true);
+        localStorage.setItem("ta_notify_prompted", "1");
         setTimeout(() => setModal({ type: "notify" }), 1400);
       }
     },
