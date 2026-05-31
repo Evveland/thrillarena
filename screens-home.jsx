@@ -23,6 +23,52 @@ const Onboarding = ({ onStart }) => {
   ];
   const s = slides[step];
 
+  // Slide 1 uses a special full-bleed splash layout
+  if (step === 0) {
+    return (
+      <div style={{ position: "absolute", inset: 0, zIndex: 200, display: "flex", flexDirection: "column" }}>
+        {/* Full-bleed background image */}
+        <img src="/splash.png" alt="Thrill Arena" style={{
+          position: "absolute", inset: 0, width: "100%", height: "100%",
+          objectFit: "cover", objectPosition: "center top",
+        }} />
+        {/* Skip button */}
+        <div style={{ position: "relative", zIndex: 2, display: "flex", justifyContent: "flex-end", padding: "20px 24px 0" }}>
+          <button className="btn" style={{ color: "rgba(255,255,255,0.6)", fontSize: 13, fontWeight: 600, letterSpacing: "0.06em", background: "rgba(0,0,0,0.3)", borderRadius: 8, padding: "6px 12px" }}
+            onClick={onStart}>SKIP →</button>
+        </div>
+        {/* Spacer */}
+        <div style={{ flex: 1 }} />
+        {/* Text + CTA overlay — gradient scrim from bottom */}
+        <div style={{
+          position: "relative", zIndex: 2,
+          background: "linear-gradient(to top, #0A0E1C 55%, rgba(10,14,28,0.85) 75%, transparent 100%)",
+          padding: "40px 28px 36px",
+        }}>
+          <div className="eyebrow" style={{ color: "var(--orange)", marginBottom: 12 }}>{s.eyebrow}</div>
+          <div className="h-big" style={{ marginBottom: 14, whiteSpace: "pre-line", fontSize: 44, lineHeight: 0.95 }}>{s.title}</div>
+          <div style={{ color: "var(--text-dim)", fontSize: 15, lineHeight: 1.5, marginBottom: 24 }}>{s.body}</div>
+          {/* Dots */}
+          <div style={{ display: "flex", gap: 8, marginBottom: 18 }}>
+            {slides.map((_, i) => (
+              <div key={i} style={{
+                height: 4, flex: 1, borderRadius: 2,
+                background: i === step ? "var(--teal)" : "rgba(255,255,255,0.15)",
+                transition: "background 0.2s",
+              }} />
+            ))}
+          </div>
+          <button className="btn btn-primary" onClick={() => setStep(1)} style={{ width: "100%", fontSize: 15 }}>
+            Continue →
+          </button>
+          <div style={{ marginTop: 14, textAlign: "center", fontSize: 11, color: "rgba(255,255,255,0.35)", letterSpacing: "0.06em" }}>
+            Powered by <span style={{ color: "var(--teal)", fontWeight: 700 }}>Thrill.com</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={{
       position: "absolute", inset: 0, zIndex: 200,
@@ -39,8 +85,8 @@ const Onboarding = ({ onStart }) => {
           onClick={onStart}>SKIP →</button>
       </div>
 
-      {/* art — slightly taller on logo slide to show the full splash image */}
-      <div style={{ flex: "0 0 auto", height: s.art === "logo" ? "42vh" : "28vh", maxHeight: s.art === "logo" ? 320 : 200, display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
+      {/* art */}
+      <div style={{ flex: "0 0 auto", height: "28vh", maxHeight: 200, display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
         {s.art === "logo" && (
           <img
             src="/splash.png"
