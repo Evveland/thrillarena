@@ -1,9 +1,6 @@
 // POST /api/write  { initData, operation, payload }
-// Server-side write proxy using the service role key.
-// Validates the Telegram initData signature, then writes to Supabase
-// using the service role — no client-side JWT auth needed.
+// Uses Supabase REST API directly (no SDK dependency).
 const crypto = require("crypto");
-const { createClient } = require("@supabase/supabase-js");
 
 const CORS = {
   "Access-Control-Allow-Origin":  "*",
@@ -11,6 +8,31 @@ const CORS = {
   "Access-Control-Allow-Headers": "Content-Type",
 };
 
+// ── Supabase REST helpers ─────────────────────────────────
+function sbHeaders(serviceKey) {
+  return {
+    "apikey":        serviceKey,
+    "Authorization": `Bearer ${serviceKey}`,
+    "Content-Type":  "application/json",
+    "Prefer":        "return=representation",
+  };
+}
+
+async function sbQuery(url, serviceKey, method = "GET", body = null) {
+  const opts = { method, headers: sbHeaders(serviceKey) };
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(url, opts);
+  const text = await res.text();
+  let data;
+  try { data = JSON.parse(text); } catch { data = text; }
+  return { ok: res.ok, status: res.status, data };
+}
+
+function sbUrl(baseUrl, table, query = "") {
+  return `${baseUrl}/rest/v1/${table}${query ? "?" + query : ""}`;
+}
+
+// ── Telegram verification ─────────────────────────────────
 function verifyTelegram(initData, botToken) {
   try {
     const params = new URLSearchParams(initData);
@@ -21,8 +43,7 @@ function verifyTelegram(initData, botToken) {
     const key  = crypto.createHmac("sha256","WebAppData").update(botToken).digest();
     const exp  = crypto.createHmac("sha256",key).update(str).digest("hex");
     if (!crypto.timingSafeEqual(Buffer.from(exp,"hex"), Buffer.from(hash,"hex"))) return null;
-    const userParam = params.get("user");
-    return userParam ? JSON.parse(userParam) : {};
+    return JSON.parse(params.get("user") || "{}");
   } catch { return null; }
 }
 
@@ -32,133 +53,186 @@ function telegramIdToUUID(telegramId) {
     ((parseInt(hash[16],16)&3)|8).toString(16)+hash.slice(17,20), hash.slice(20,32)].join("-");
 }
 
+// ── Handler ───────────────────────────────────────────────
 module.exports = async function handler(req, res) {
   Object.entries(CORS).forEach(([k,v]) => res.setHeader(k,v));
   if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method !== "POST")    return res.status(405).end();
 
-  const BOT_TOKEN    = process.env.TELEGRAM_BOT_TOKEN;
   const SERVICE_KEY  = process.env.SUPABASE_SERVICE_KEY;
-  const SUPABASE_URL = process.env.SUPABASE_URL || "https://zlslbgtuvjswkeeamxvb.supabase.co";
+  const BOT_TOKEN    = process.env.TELEGRAM_BOT_TOKEN;
+  const SUPABASE_URL = "https://zlslbgtuvjswkeeamxvb.supabase.co";
 
   if (!SERVICE_KEY) return res.status(500).json({ error: "SUPABASE_SERVICE_KEY not set" });
 
-  const { initData, operation, payload } = req.body || {};
-  if (!operation || !payload) return res.status(400).json({ error: "operation and payload required" });
+  const { initData, operation, payload = {} } = req.body || {};
+  if (!operation) return res.status(400).json({ error: "operation required" });
 
-  // Identify the user
-  let userId, telegramId;
+  // Identify user from Telegram initData or payload fallback
+  let userId, telegramId, tgUser = {};
   if (initData && BOT_TOKEN) {
-    const tgUser = verifyTelegram(initData, BOT_TOKEN);
-    if (tgUser && tgUser.id) {
-      telegramId = Number(tgUser.id);
+    const verified = verifyTelegram(initData, BOT_TOKEN);
+    if (verified?.id) {
+      telegramId = Number(verified.id);
       userId     = telegramIdToUUID(telegramId);
+      tgUser     = verified;
     }
   }
-  // Fallback: accept a userId directly for dev/anonymous sessions
-  if (!userId) {
-    userId     = payload.userId || null;
-    telegramId = payload.telegramId || null;
-  }
-  if (!userId) return res.status(400).json({ error: "Cannot identify user" });
+  if (!userId && payload.userId) { userId = payload.userId; telegramId = payload.telegramId || null; }
+  if (!userId) return res.status(400).json({ error: "Cannot identify user — no initData and no userId in payload" });
 
-  const db = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
+  const BASE = SUPABASE_URL;
 
   try {
     switch (operation) {
 
+      // ── Upsert user ─────────────────────────────────────
       case "upsert_user": {
-        const { username, display_name, referred_by } = payload;
-        // Try insert first (new user — triggers referral energy award)
-        const { error: ie } = await db.from("users").insert({
-          id: userId, telegram_id: telegramId,
-          username: username || null, display_name: display_name || null,
-          referred_by: referred_by || null,
-        });
-        if (ie && (ie.code === "23505" || ie.message?.includes("duplicate"))) {
-          await db.from("users").update({ username: username||null, display_name: display_name||null }).eq("id", userId);
+        const username     = payload.username     || tgUser.username    || null;
+        const display_name = payload.display_name || tgUser.first_name  || null;
+        const referred_by  = payload.referred_by  || null;
+
+        // Try INSERT
+        const ins = await sbQuery(
+          `${BASE}/rest/v1/users`,
+          SERVICE_KEY, "POST",
+          { id: userId, telegram_id: telegramId, username, display_name, referred_by }
+        );
+
+        if (!ins.ok) {
+          // Conflict — update display info only
+          await sbQuery(
+            `${BASE}/rest/v1/users?id=eq.${userId}`,
+            SERVICE_KEY, "PATCH",
+            { username, display_name }
+          );
         }
-        const { data: user } = await db.from("users").select("*").eq("id", userId).single();
+
+        // Fetch the user row
+        const get = await sbQuery(
+          `${BASE}/rest/v1/users?id=eq.${userId}&select=*`,
+          SERVICE_KEY, "GET"
+        );
+        const user = Array.isArray(get.data) ? get.data[0] : null;
         return res.json({ ok: true, user });
       }
 
+      // ── Save prediction ──────────────────────────────────
       case "save_prediction": {
         const { matchId, predictionValue, energyCost } = payload;
-        // Look up match UUID from external_id
-        const { data: match } = await db.from("matches").select("id").eq("external_id", matchId).single();
-        if (!match) return res.json({ ok: false, error: "match not found: " + matchId });
-        const { error } = await db.from("predictions").upsert(
-          { user_id: userId, match_id: match.id, prediction_value: predictionValue, energy_cost: energyCost || 0 },
-          { onConflict: "user_id,match_id" }
+        // Resolve match UUID from external_id
+        const mRes = await sbQuery(
+          `${BASE}/rest/v1/matches?external_id=eq.${encodeURIComponent(matchId)}&select=id`,
+          SERVICE_KEY, "GET"
         );
-        if (error) return res.json({ ok: false, error: error.message });
+        const match = Array.isArray(mRes.data) ? mRes.data[0] : null;
+        if (!match) return res.json({ ok: false, error: `match not found: ${matchId}` });
+
+        const r = await sbQuery(
+          `${BASE}/rest/v1/predictions`,
+          SERVICE_KEY, "POST",
+          { user_id: userId, match_id: match.id, prediction_value: predictionValue, energy_cost: energyCost || 0 }
+        );
+        if (!r.ok && r.status === 409) {
+          // Conflict — update existing prediction
+          await sbQuery(
+            `${BASE}/rest/v1/predictions?user_id=eq.${userId}&match_id=eq.${match.id}`,
+            SERVICE_KEY, "PATCH",
+            { prediction_value: predictionValue, energy_cost: energyCost || 0 }
+          );
+        }
         return res.json({ ok: true });
       }
 
+      // ── Record energy ────────────────────────────────────
       case "record_energy": {
         const { actionType, delta, balanceAfter, relatedUserId, notes } = payload;
-        await db.from("energy_ledger").insert({ user_id: userId, action_type: actionType, delta, balance_after: balanceAfter, related_user_id: relatedUserId||null, notes: notes||null });
-        await db.from("users").update({ energy_balance: balanceAfter }).eq("id", userId);
+        await sbQuery(`${BASE}/rest/v1/energy_ledger`, SERVICE_KEY, "POST",
+          { user_id: userId, action_type: actionType, delta, balance_after: balanceAfter,
+            related_user_id: relatedUserId || null, notes: notes || null });
+        await sbQuery(`${BASE}/rest/v1/users?id=eq.${userId}`, SERVICE_KEY, "PATCH",
+          { energy_balance: balanceAfter });
         return res.json({ ok: true });
       }
 
+      // ── Save deposit + boost ─────────────────────────────
       case "save_deposit": {
         const { depositNumber, amount, currency, multiplier } = payload;
         const trigger = depositNumber === 1 ? "first_deposit" : depositNumber === 2 ? "second_deposit" : "third_deposit";
-        await db.from("deposits").upsert({ user_id: userId, deposit_number: depositNumber, amount, currency }, { onConflict: "user_id,deposit_number" });
-        await db.from("user_boosts").update({ is_active: false }).eq("user_id", userId);
-        await db.from("user_boosts").insert({ user_id: userId, trigger, multiplier, is_active: true });
+        await sbQuery(`${BASE}/rest/v1/deposits`, SERVICE_KEY, "POST",
+          { user_id: userId, deposit_number: depositNumber, amount, currency });
+        await sbQuery(`${BASE}/rest/v1/user_boosts?user_id=eq.${userId}`, SERVICE_KEY, "PATCH",
+          { is_active: false });
+        await sbQuery(`${BASE}/rest/v1/user_boosts`, SERVICE_KEY, "POST",
+          { user_id: userId, trigger, multiplier, is_active: true });
         return res.json({ ok: true });
       }
 
+      // ── Save task ────────────────────────────────────────
       case "save_task": {
-        const { taskType } = payload;
-        await db.from("thrill_tasks").insert({ user_id: userId, task_type: taskType, status: "completed", verified_at: new Date().toISOString() });
+        await sbQuery(`${BASE}/rest/v1/thrill_tasks`, SERVICE_KEY, "POST",
+          { user_id: userId, task_type: payload.taskType, status: "completed",
+            verified_at: new Date().toISOString() });
         return res.json({ ok: true });
       }
 
+      // ── Save wallet ──────────────────────────────────────
       case "save_wallet": {
-        const { address, walletName } = payload;
-        await db.from("users").update({ wallet_address: address, wallet_name: walletName||null }).eq("id", userId);
+        await sbQuery(`${BASE}/rest/v1/users?id=eq.${userId}`, SERVICE_KEY, "PATCH",
+          { wallet_address: payload.address, wallet_name: payload.walletName || null });
         return res.json({ ok: true });
       }
 
+      // ── Load full state ──────────────────────────────────
       case "load_state": {
         const [userRes, predsRes, boostsRes, depositsRes] = await Promise.all([
-          db.from("users").select("*").eq("id", userId).single(),
-          db.from("predictions").select("match_id,prediction_value,result_status,is_correct").eq("user_id", userId),
-          db.from("user_boosts").select("trigger,multiplier").eq("user_id", userId).eq("is_active", true).order("multiplier", { ascending: false }).limit(1),
-          db.from("deposits").select("deposit_number,amount,currency").eq("user_id", userId).order("deposit_number"),
+          sbQuery(`${BASE}/rest/v1/users?id=eq.${userId}&select=*`, SERVICE_KEY, "GET"),
+          sbQuery(`${BASE}/rest/v1/predictions?user_id=eq.${userId}&select=match_id,prediction_value,result_status,is_correct`, SERVICE_KEY, "GET"),
+          sbQuery(`${BASE}/rest/v1/user_boosts?user_id=eq.${userId}&is_active=eq.true&select=trigger,multiplier&order=multiplier.desc&limit=1`, SERVICE_KEY, "GET"),
+          sbQuery(`${BASE}/rest/v1/deposits?user_id=eq.${userId}&select=deposit_number,amount,currency&order=deposit_number.asc`, SERVICE_KEY, "GET"),
         ]);
-        // Get match external_ids for prediction map
-        const matchIds = (predsRes.data || []).map(p => p.match_id);
+
+        const preds = Array.isArray(predsRes.data) ? predsRes.data : [];
+        const matchIds = preds.map(p => p.match_id).filter(Boolean);
         let matchMap = {};
         if (matchIds.length) {
-          const { data: matches } = await db.from("matches").select("id,external_id").in("id", matchIds);
-          (matches || []).forEach(m => { matchMap[m.id] = m.external_id; });
+          const mRes = await sbQuery(
+            `${BASE}/rest/v1/matches?id=in.(${matchIds.join(",")})&select=id,external_id`,
+            SERVICE_KEY, "GET"
+          );
+          (Array.isArray(mRes.data) ? mRes.data : []).forEach(m => { matchMap[m.id] = m.external_id; });
         }
+
         const predsMap = {};
-        (predsRes.data || []).forEach(p => { if (matchMap[p.match_id]) predsMap[matchMap[p.match_id]] = p.prediction_value; });
+        preds.forEach(p => { if (matchMap[p.match_id]) predsMap[matchMap[p.match_id]] = p.prediction_value; });
+
+        const boosts = Array.isArray(boostsRes.data) ? boostsRes.data : [];
+        const deposits = Array.isArray(depositsRes.data) ? depositsRes.data : [];
+
         return res.json({
           ok: true,
-          user: userRes.data,
-          predictions: predsMap,
-          multiplier: boostsRes.data?.[0]?.multiplier ?? 1,
-          lifetimeDeposited: (depositsRes.data||[]).reduce((s,d) => s+Number(d.amount),0),
-          depositCount: depositsRes.data?.length ?? 0,
+          user:             Array.isArray(userRes.data) ? userRes.data[0] : null,
+          predictions:      predsMap,
+          multiplier:       boosts[0]?.multiplier ?? 1,
+          lifetimeDeposited:deposits.reduce((s,d) => s + Number(d.amount), 0),
+          depositCount:     deposits.length,
         });
       }
 
+      // ── Referral count ───────────────────────────────────
       case "get_referral_count": {
-        const { data } = await db.from("users").select("id", { count: "exact", head: true }).eq("referred_by", userId);
-        return res.json({ ok: true, count: data?.length ?? 0 });
+        const r = await sbQuery(
+          `${BASE}/rest/v1/users?referred_by=eq.${userId}&select=id`,
+          SERVICE_KEY, "GET"
+        );
+        return res.json({ ok: true, count: Array.isArray(r.data) ? r.data.length : 0 });
       }
 
       default:
-        return res.status(400).json({ error: "Unknown operation: " + operation });
+        return res.status(400).json({ error: `Unknown operation: ${operation}` });
     }
   } catch (e) {
-    console.error("[write]", operation, e);
+    console.error("[write]", operation, e.message);
     return res.status(500).json({ error: e.message });
   }
 };
