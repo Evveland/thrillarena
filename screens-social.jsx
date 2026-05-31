@@ -757,11 +757,18 @@ const ProfileScreen = ({ state, actions }) => {
               </span>
               <span style={{ fontSize: 9, letterSpacing: "0.08em", color: "var(--text-faint)" }}>TON</span>
             </div>
-            <div style={{ display: "flex", gap: 8 }}>
-              <button className="btn btn-ghost" style={{ flex: 1 }}>Send</button>
-              <button className="btn btn-ghost" style={{ flex: 1 }}>Withdraw</button>
-              <button className="btn btn-ghost" style={{ flex: 1, color: "var(--teal)", borderColor: "rgba(93,237,165,0.4)" }}>Stake</button>
-            </div>
+            <a
+              href="https://thrill.com/deposit"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn-primary"
+              style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, textDecoration: "none", width: "100%" }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 2 L4 14 H10 L9 22 L20 9 H13 L15 2 Z" fill="currentColor" strokeWidth="0"/>
+              </svg>
+              Deposit on Thrill — multiply your tickets
+            </a>
           </div>
         ) : (
           // ── NOT CONNECTED — call to action ──
