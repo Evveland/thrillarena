@@ -11,12 +11,14 @@
 (function () {
   // Defer until DOM is ready (TonConnectUI needs document.body)
   function init() {
-    if (typeof window.TonConnectUI === "undefined") {
-      console.warn("[TonConnect] SDK not loaded");
+    // v2.4.4 UMD exposes window.TON_CONNECT_UI.TonConnectUI
+    const TonConnectUI = window.TON_CONNECT_UI?.TonConnectUI ?? window.TonConnectUI;
+    if (typeof TonConnectUI === "undefined") {
+      console.warn("[TonConnect] SDK not loaded — window.TON_CONNECT_UI not found");
       return;
     }
 
-    const ui = new window.TonConnectUI({
+    const ui = new TonConnectUI({
       manifestUrl: "https://project-cu6be.vercel.app/tonconnect-manifest.json",
       // Don't render TonConnect's own button — we drive the UI ourselves
       buttonRootId: null,
