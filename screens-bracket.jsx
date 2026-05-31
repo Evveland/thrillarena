@@ -680,7 +680,7 @@ const PredictModal = ({ matchId, state, actions, onClose }) => {
 };
 
 // ─── RESULT (post-pick celebration) ───────────────────────
-const PickResultModal = ({ teamCode, matchId, confidence, effectiveTickets, freeUsed, onClose }) => {
+const PickResultModal = ({ teamCode, matchId, confidence, effectiveTickets, freeUsed, state, actions, onClose }) => {
   const team = Object.values(TEAMS).find(t => t.short === teamCode);
   const match = ALL_MATCHES.find(m => m.id === matchId);
   const [sentiment, setSentiment] = React.useState(null);
@@ -812,6 +812,29 @@ const PickResultModal = ({ teamCode, matchId, confidence, effectiveTickets, free
             ✦ You're the first to predict this match
           </div>
         ) : null}
+
+        {/* Boost upsell for unboosted users */}
+        {(state?.boost?.multiplier || 1) <= 1 && tix < 3 && (
+          <button className="btn" onClick={() => { onClose(); state?.actions?.openBoostHub?.(); }}
+            style={{
+              width: "calc(100% - 8px)", marginBottom: 8, padding: "12px 16px",
+              background: "rgba(255,77,103,0.08)", border: "1px solid rgba(255,77,103,0.3)",
+              borderRadius: 14, display: "flex", alignItems: "center", gap: 10,
+              textAlign: "left",
+            }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "#FF4D67", marginBottom: 2 }}>
+                Boost would have earned {tix * 5}× more tickets
+              </div>
+              <div style={{ fontSize: 11, color: "var(--text-faint)" }}>
+                A $20 deposit turns {tix} ticket{tix !== 1 ? "s" : ""} → {tix * 5} tickets per correct pick
+              </div>
+            </div>
+            <span style={{ fontSize: 11, color: "#FF4D67", fontWeight: 700, whiteSpace: "nowrap" }}>
+              Deposit →
+            </span>
+          </button>
+        )}
 
         <button className="btn btn-primary" onClick={onClose} style={{ width: "calc(100% - 8px)" }}>Done</button>
       </div>

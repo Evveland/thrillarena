@@ -25,6 +25,19 @@ const BoostGate = ({ matchId, state, actions, onClose }) => {
   const projectedTier = boostTierFor(state.boost.lifetimeDeposited + amount);
   const projectedMult = projectedTier.mult;
 
+  // Live raffle odds
+  const [odds, setOdds] = React.useState(null);
+  React.useEffect(() => {
+    if (!window.SupaDB || !state.dbUser?.id) return;
+    // Determine which daily raffle applies to this match
+    const raffleKey = match?.date
+      ? `daily_${match.date.replace(/-/g, "_")}`
+      : "final_mega";
+    window.SupaDB.db
+      .rpc("get_raffle_odds", { p_user_id: state.dbUser.id, p_raffle_key: raffleKey })
+      .then(({ data }) => { if (data) setOdds(data); });
+  }, [matchId, state.dbUser?.id]);
+
   const ladderAmounts = QUICK_DEPOSIT_AMOUNTS; // [10, 20, 50, 200, 500]
 
   return (
@@ -197,9 +210,18 @@ const BoostGate = ({ matchId, state, actions, onClose }) => {
           </div>
         </div>
 
+        {/* Odds comparison panel */}
+        <OddsPanel
+          odds={odds}
+          currentMult={currentMult}
+          projectedMult={projectedMult}
+          projectedTierColor={projectedTier.color}
+          hasCurrent={hasCurrent}
+        />
+
         {/* Footer note */}
         <div style={{
-          marginTop: 14, padding: "10px 12px",
+          marginTop: 10, padding: "10px 12px",
           background: "rgba(255,255,255,0.025)",
           border: "1px dashed rgba(255,255,255,0.08)",
           borderRadius: 10,
@@ -207,8 +229,99 @@ const BoostGate = ({ matchId, state, actions, onClose }) => {
           display: "flex", gap: 8, alignItems: "flex-start",
         }}>
           <Icon name="info" size={12} color="var(--text-faint)" />
-          <span>Boost persists for the rest of the campaign — once you reach a tier, every action keeps dropping multiplied tickets into the raffles.</span>
+          <span>Boost persists for the rest of the campaign — once you reach a tier, every correct prediction drops multiplied tickets into the raffles.</span>
         </div>
+      </div>
+    </div>
+  );
+};
+
+// ─── Odds comparison panel ────────────────────────────────
+const OddsPanel = ({ odds, currentMult, projectedMult, projectedTierColor, hasCurrent }) => {
+  if (!odds) return null;
+
+  const totalTickets = Number(odds.total_tickets) || 0;
+  const userTickets  = Number(odds.user_tickets)  || 0;
+  const entrants     = Number(odds.entrants)       || 0;
+
+  // Projected tickets from ONE correct prediction at each multiplier
+  const ticketsBase   = 1; // one correct prediction
+  const userCurrent   = userTickets + ticketsBase * currentMult;
+  const userBoosted   = userTickets + ticketsBase * projectedMult;
+  const poolWithBase  = totalTickets + ticketsBase * currentMult;
+  const poolWithBoost = totalTickets + ticketsBase * projectedMult;
+
+  const oddsBase   = poolWithBase  > 0 ? (userCurrent  / poolWithBase  * 100) : 0;
+  const oddsBoosted = poolWithBoost > 0 ? (userBoosted / poolWithBoost * 100) : 0;
+  const improvement = oddsBase > 0 ? (oddsBoosted / oddsBase).toFixed(1) : projectedMult;
+
+  const fmtOdds = (pct) => {
+    if (pct >= 1)     return pct.toFixed(1) + "%";
+    if (pct >= 0.01)  return pct.toFixed(2) + "%";
+    if (pct === 0)    return "< 0.01%";
+    return "1 in " + Math.round(1 / (pct / 100)).toLocaleString();
+  };
+
+  const boost = projectedMult;
+  const extraTickets = ticketsBase * boost - ticketsBase * currentMult;
+
+  return (
+    <div style={{
+      marginTop: 14, padding: "14px 16px", borderRadius: 14,
+      background: `linear-gradient(135deg, ${projectedTierColor}0D, rgba(255,255,255,0.02))`,
+      border: `1px solid ${projectedTierColor}44`,
+    }}>
+      <div className="eyebrow" style={{ color: projectedTierColor, marginBottom: 10 }}>
+        📊 Your odds in today's raffle
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: 10, marginBottom: 10 }}>
+        {/* Without boost */}
+        <div style={{ textAlign: "center" }}>
+          <div style={{ fontSize: 10, color: "var(--text-faint)", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+            {hasCurrent ? "Current" : "Without boost"}
+          </div>
+          <div className="num" style={{ fontFamily: "var(--display)", fontSize: 20, color: "var(--text-dim)" }}>
+            {fmtOdds(oddsBase)}
+          </div>
+          <div style={{ fontSize: 10, color: "var(--text-faint)", marginTop: 2 }}>
+            {Math.round(userCurrent)} ticket{Math.round(userCurrent) !== 1 ? "s" : ""}
+          </div>
+        </div>
+
+        {/* Arrow + improvement */}
+        <div style={{ textAlign: "center" }}>
+          <div style={{
+            padding: "4px 8px", borderRadius: 8,
+            background: projectedTierColor + "22",
+            border: "1px solid " + projectedTierColor + "55",
+            fontSize: 11, fontWeight: 800, color: projectedTierColor,
+            fontFamily: "var(--display)",
+          }}>
+            {improvement}×
+          </div>
+          <div style={{ fontSize: 18, color: projectedTierColor, marginTop: 4 }}>→</div>
+        </div>
+
+        {/* With boost */}
+        <div style={{ textAlign: "center" }}>
+          <div style={{ fontSize: 10, color: projectedTierColor, marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 700 }}>
+            With {fmtMult(boost)} boost
+          </div>
+          <div className="num" style={{ fontFamily: "var(--display)", fontSize: 20, color: projectedTierColor }}>
+            {fmtOdds(oddsBoosted)}
+          </div>
+          <div style={{ fontSize: 10, color: projectedTierColor, marginTop: 2, opacity: 0.8 }}>
+            {Math.round(userBoosted)} ticket{Math.round(userBoosted) !== 1 ? "s" : ""}
+          </div>
+        </div>
+      </div>
+
+      {/* Context line */}
+      <div style={{ fontSize: 11, color: "var(--text-dim)", lineHeight: 1.5, borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 8 }}>
+        {entrants > 0
+          ? <>Pool has <b className="num" style={{ color: "var(--text)" }}>{totalTickets.toLocaleString()}</b> tickets from <b className="num" style={{ color: "var(--text)" }}>{entrants}</b> players. {extraTickets > 0 ? <>A deposit adds <b style={{ color: projectedTierColor }} className="num">+{Math.round(extraTickets)}</b> tickets per correct pick — putting you ahead of most unboosted players.</> : "You already have a boost active."}</>
+          : <>Be among the first to predict — early entrants face less competition for the prize pool.</>}
       </div>
     </div>
   );

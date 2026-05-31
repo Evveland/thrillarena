@@ -557,6 +557,8 @@ function App() {
           confidence={modal.confidence || 60}
           effectiveTickets={modal.effectiveTickets || 1}
           freeUsed={modal.freeUsed}
+          state={state}
+          actions={actions}
           onClose={() => setModal(null)}
         />
       )}
