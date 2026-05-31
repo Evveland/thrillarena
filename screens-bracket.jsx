@@ -680,15 +680,40 @@ const PredictModal = ({ matchId, state, actions, onClose }) => {
 };
 
 // ─── RESULT (post-pick celebration) ───────────────────────
-const PickResultModal = ({ teamCode, freeUsed, onClose }) => {
+const PickResultModal = ({ teamCode, matchId, confidence, effectiveTickets, freeUsed, onClose }) => {
   const team = Object.values(TEAMS).find(t => t.short === teamCode);
+  const match = ALL_MATCHES.find(m => m.id === matchId);
+  const [sentiment, setSentiment] = React.useState(null);
+
+  // Load live sentiment for this match
+  React.useEffect(() => {
+    if (!matchId || !window.SupaDB) return;
+    window.SupaDB.db.rpc("get_match_sentiment", { p_external_id: matchId })
+      .then(({ data }) => { if (data) setSentiment(data); });
+  }, [matchId]);
+
   if (!team) return null;
+
+  const conf        = confidence || 60;
+  const tix         = effectiveTickets || 1;
+  const confLabel   = conf >= 80 ? "High" : conf >= 65 ? "Medium" : "Low";
+  const confColor   = conf >= 80 ? "var(--teal)" : conf >= 65 ? "var(--orange)" : "var(--text-faint)";
+
+  // Sentiment breakdown
+  const total     = Number(sentiment?.total  || 0);
+  const picks     = sentiment?.picks || {};
+  const homePicks = Number(picks[match?.home] || 0);
+  const awayPicks = Number(picks[match?.away] || 0);
+  const drawPicks = Number(picks["draw"]      || 0);
+  const myPct     = total > 0 ? Math.round((Number(picks[teamCode] || 0) / total) * 100) : null;
+
   return (
     <div className="modal" onClick={onClose}>
       <div className="modal-sheet" onClick={e => e.stopPropagation()} style={{ textAlign: "center", paddingBottom: 28 }}>
         <div className="modal-handle" />
 
-        <div style={{ position: "relative", margin: "10px auto 18px", width: 130, height: 130 }}>
+        {/* Flag circle */}
+        <div style={{ position: "relative", margin: "10px auto 18px", width: 120, height: 120 }}>
           <div style={{
             position: "absolute", inset: -30, borderRadius: "50%",
             background: "radial-gradient(circle, rgba(93,237,165,0.5), transparent 60%)",
@@ -696,33 +721,99 @@ const PickResultModal = ({ teamCode, freeUsed, onClose }) => {
           }} />
           <div style={{
             position: "relative", width: "100%", height: "100%",
-            borderRadius: "50%", background: "linear-gradient(135deg, var(--teal), var(--teal-d))",
+            borderRadius: "50%", background: "linear-gradient(135deg, var(--teal), #3fcb85)",
             display: "flex", alignItems: "center", justifyContent: "center",
             boxShadow: "0 12px 36px var(--teal-glow)",
           }}>
-            <div className="flag" style={{ fontSize: 64, lineHeight: 1 }}>{team.flag}</div>
+            <div className="flag" style={{ fontSize: 60, lineHeight: 1 }}>{team.flag}</div>
           </div>
         </div>
 
-        <div className="eyebrow" style={{ marginBottom: 8 }}>Pick locked</div>
-        <div className="h-big" style={{ marginBottom: 12 }}>{team.short}<br/>FTW</div>
-        <div style={{ fontSize: 14, color: "var(--text-dim)", marginBottom: 22, padding: "0 12px" }}>
+        <div className="eyebrow" style={{ marginBottom: 8, color: "var(--teal)" }}>Pick locked ✓</div>
+        <div className="h-big" style={{ marginBottom: 10, fontSize: 52 }}>{team.short}<br/>FTW</div>
+        <div style={{ fontSize: 13, color: "var(--text-dim)", marginBottom: 20, padding: "0 16px", lineHeight: 1.5 }}>
           You called <b style={{ color: "var(--text)" }}>{team.name}</b> to win.
-          You'll see the result after the final whistle.
+          Result after the final whistle.
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
-          <div className="card" style={{ padding: 14 }}>
-            <div style={{ fontSize: 10, color: "var(--text-faint)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 6 }}>If correct</div>
-            <div className="h-md num" style={{ color: "var(--teal)" }}>+100 PTS</div>
+        {/* Ticket reward */}
+        <div style={{
+          display: "flex", alignItems: "center", justifyContent: "center", gap: 16,
+          padding: "14px 20px", marginBottom: 14,
+          borderRadius: 16,
+          background: "rgba(93,237,165,0.08)",
+          border: "1px solid rgba(93,237,165,0.25)",
+          marginLeft: 4, marginRight: 4,
+        }}>
+          <div style={{ textAlign: "left" }}>
+            <div style={{ fontSize: 10, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 4 }}>If correct</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <TicketGlyph size={18} color="var(--teal)" />
+              <span className="num" style={{ fontFamily: "var(--display)", fontSize: 28, color: "var(--teal)", lineHeight: 1 }}>+{tix}</span>
+              <span style={{ fontSize: 13, color: "var(--text-dim)" }}>ticket{tix !== 1 ? "s" : ""}</span>
+            </div>
           </div>
-          <div className="card" style={{ padding: 14 }}>
-            <div style={{ fontSize: 10, color: "var(--text-faint)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 6 }}>Streak bonus</div>
-            <div className="h-md num token-shimmer">+15</div>
+          <div style={{ width: 1, height: 36, background: "var(--line-soft)" }} />
+          <div style={{ textAlign: "left" }}>
+            <div style={{ fontSize: 10, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 4 }}>Confidence</div>
+            <div style={{ fontFamily: "var(--display)", fontSize: 20, color: confColor }}>{conf}%</div>
+            <div style={{ fontSize: 10, color: confColor, marginTop: 2 }}>{confLabel}</div>
           </div>
         </div>
 
-        <button className="btn btn-primary" onClick={onClose}>Done</button>
+        {/* Live sentiment */}
+        {total > 0 && match ? (
+          <div style={{
+            padding: "12px 14px", marginBottom: 14, borderRadius: 14,
+            background: "rgba(255,255,255,0.03)",
+            border: "1px solid var(--line-soft)",
+            marginLeft: 4, marginRight: 4,
+          }}>
+            <div style={{ fontSize: 10, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8 }}>
+              Audience sentiment · {total} pick{total !== 1 ? "s" : ""}
+            </div>
+            {/* Bar */}
+            <div style={{ display: "flex", height: 10, borderRadius: 5, overflow: "hidden", marginBottom: 8, gap: 1 }}>
+              {[
+                { team: match.home, val: homePicks, color: "#5deda5" },
+                { team: "draw",     val: drawPicks, color: "#ffd60a" },
+                { team: match.away, val: awayPicks, color: "#ff4d67" },
+              ].filter(s => s.val > 0).map((s, i) => (
+                <div key={i} style={{
+                  flex: s.val, background: teamCode === s.team ? s.color : s.color + "66",
+                  transition: "flex 0.4s ease",
+                }} />
+              ))}
+            </div>
+            {/* Labels */}
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11 }}>
+              <span style={{ color: teamCode === match.home ? "var(--teal)" : "var(--text-faint)" }}>
+                {match.home} {total > 0 ? Math.round(homePicks/total*100) : 0}%
+              </span>
+              {drawPicks > 0 && (
+                <span style={{ color: "var(--text-faint)" }}>Draw {Math.round(drawPicks/total*100)}%</span>
+              )}
+              <span style={{ color: teamCode === match.away ? "var(--teal)" : "var(--text-faint)" }}>
+                {match.away} {total > 0 ? Math.round(awayPicks/total*100) : 0}%
+              </span>
+            </div>
+            {myPct !== null && (
+              <div style={{ marginTop: 8, fontSize: 11, color: "var(--text-dim)" }}>
+                {myPct > 50
+                  ? `✦ You're with the majority — ${myPct}% picked ${teamCode}`
+                  : myPct > 0
+                  ? `✦ Contrarian pick — only ${myPct}% agree with you`
+                  : `✦ First pick for ${teamCode}`}
+              </div>
+            )}
+          </div>
+        ) : total === 0 && sentiment ? (
+          <div style={{ fontSize: 11, color: "var(--text-faint)", marginBottom: 14 }}>
+            ✦ You're the first to predict this match
+          </div>
+        ) : null}
+
+        <button className="btn btn-primary" onClick={onClose} style={{ width: "calc(100% - 8px)" }}>Done</button>
       </div>
     </div>
   );

@@ -248,7 +248,7 @@ function App() {
           }
         }
       }
-      setModal({ type: "result", teamCode, freeUsed: wasNew && freePicksLeft > 0 });
+      setModal({ type: "result", teamCode, matchId, confidence, effectiveTickets: confidenceBase * boost.multiplier, freeUsed: wasNew && freePicksLeft > 0 });
 
       // After the FIRST pick, prompt for notifications (re-engagement hook).
       if (wasNew && !notifyPrompted && !notifPrefs.enabled) {
@@ -552,8 +552,14 @@ function App() {
         />
       )}
       {modal?.type === "result" && (
-        <PickResultModal teamCode={modal.teamCode} freeUsed={modal.freeUsed}
-          onClose={() => setModal(null)} />
+        <PickResultModal
+          teamCode={modal.teamCode}
+          matchId={modal.matchId}
+          confidence={modal.confidence || 60}
+          effectiveTickets={modal.effectiveTickets || 1}
+          freeUsed={modal.freeUsed}
+          onClose={() => setModal(null)}
+        />
       )}
       {modal?.type === "casino" && (
         <CasinoScreen state={state} actions={actions} onClose={() => setModal(null)} />
