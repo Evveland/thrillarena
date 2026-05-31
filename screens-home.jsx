@@ -39,27 +39,20 @@ const Onboarding = ({ onStart }) => {
           onClick={onStart}>SKIP →</button>
       </div>
 
-      {/* art — small fixed height so copy always fits */}
-      <div style={{ flex: "0 0 auto", height: "28vh", maxHeight: 200, display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
+      {/* art — slightly taller on logo slide to show the full splash image */}
+      <div style={{ flex: "0 0 auto", height: s.art === "logo" ? "42vh" : "28vh", maxHeight: s.art === "logo" ? 320 : 200, display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
         {s.art === "logo" && (
-          <div style={{ position: "relative", textAlign: "center" }}>
-            <div style={{
-              position: "absolute", inset: -20, borderRadius: "50%",
-              background: "radial-gradient(circle, rgba(93,237,165,0.35), transparent 65%)",
-              filter: "blur(18px)",
-            }} />
-            <div style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
-              <ThrillWordmark size={56} />
-              <ThrillMark size={62} />
-              <div style={{
-                fontFamily: "var(--display)",
-                fontSize: 20,
-                letterSpacing: "0.08em",
-                color: "#5DEDA5",
-                textTransform: "uppercase",
-              }}>Arena</div>
-            </div>
-          </div>
+          <img
+            src="/splash.png"
+            alt="Thrill Arena"
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "contain",
+              objectPosition: "center",
+              borderRadius: 16,
+            }}
+          />
         )}
         {s.art === "bolt" && (
           <div style={{ position: "relative" }}>
