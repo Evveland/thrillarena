@@ -115,12 +115,12 @@ module.exports = async function handler(req, res) {
           console.log("[write] referral detected:", payload.referrerTelegramId, "→", referred_by);
         }
 
-        // Try INSERT — new user. The DB trigger award_referral_energy() fires
-        // on INSERT when referred_by IS NOT NULL, crediting the referrer +30⚡.
+        // Try INSERT — new user starts with 20 energy.
+        // DB trigger award_referral_energy() fires when referred_by IS NOT NULL → referrer gets +30⚡.
         const ins = await sbQuery(
           `${BASE}/rest/v1/users`,
           SERVICE_KEY, "POST",
-          { id: userId, telegram_id: telegramId, username, display_name, referred_by }
+          { id: userId, telegram_id: telegramId, username, display_name, referred_by, energy_balance: 20 }
         );
 
         if (!ins.ok) {

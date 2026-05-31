@@ -431,7 +431,9 @@ const InviteShareModal = ({ onClose, onSent }) => {
   const [shared, setShared]   = React.useState(false);
 
   const refCode   = getReferralCode();
-  const inviteUrl = `https://t.me/thrillarena_bot?start=${refCode}`;
+  // ?startapp= puts the value in initDataUnsafe.start_param for mini apps
+  // ?start= only passes to the bot's /start command — doesn't reach the mini app
+  const inviteUrl = `https://t.me/thrillarena_bot?startapp=${refCode}`;
   const shareText = encodeURIComponent("⚽ Join me on Thrill Arena — predict WC 2026 matches and win from a $20,000 USDT prize pool!");
   const shareUrl  = `https://t.me/share/url?url=${encodeURIComponent(inviteUrl)}&text=${shareText}`;
 
