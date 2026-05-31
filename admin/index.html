@@ -285,7 +285,7 @@
         <div class="table-card">
           <div class="table-toolbar"><h3>Match sentiment & results</h3></div>
           <table>
-            <thead><tr><th>Match ID</th><th>Total picks</th><th>Correct</th><th>Pending</th><th>Sentiment (home / draw / away)</th></tr></thead>
+            <thead><tr><th>Match</th><th>Total</th><th>Correct</th><th>Pending</th><th>Picks breakdown + Sentiment</th></tr></thead>
             <tbody id="match-sentiment-tbody"></tbody>
           </table>
         </div>
@@ -773,27 +773,41 @@ async function loadPredictions() {
       </tr>`).join("")
     : `<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--muted)">No graded predictions yet</td></tr>`;
 
-  // Match sentiment
-  const bm = (d.by_match || []).slice(0, 50);
+  // Match sentiment — prediction_value is a team code, not home_win/away_win
+  const bm = (d.by_match || []).slice(0, 100);
   document.getElementById("match-sentiment-tbody").innerHTML = bm.length
     ? bm.map(m => {
         const total = Number(m.total) || 1;
         const home  = Number(m.sentiment_home) || 0;
         const draw  = Number(m.sentiment_draw) || 0;
         const away  = Number(m.sentiment_away) || 0;
-        const ph = (home/total*100).toFixed(0), pd = (draw/total*100).toFixed(0), pa = (away/total*100).toFixed(0);
+        const ph = home > 0 ? (home/total*100).toFixed(0) : 0;
+        const pd = draw > 0 ? (draw/total*100).toFixed(0) : 0;
+        const pa = away > 0 ? (away/total*100).toFixed(0) : 0;
+        const matchLabel = m.external_id || m.match_id?.slice(0,12) || "—";
+        const homeTeam   = m.home_team || "Home";
+        const awayTeam   = m.away_team || "Away";
         return `<tr>
-          <td style="font-family:monospace;font-size:11px;color:var(--muted)">${m.match_id?.slice(0,8)}…</td>
+          <td>
+            <div style="font-weight:600;font-size:12px">${matchLabel}</div>
+            <div style="font-size:10px;color:var(--muted)">${homeTeam} vs ${awayTeam}</div>
+          </td>
           <td>${fmt(m.total)}</td>
           <td style="color:var(--teal)">${fmt(m.correct)}</td>
           <td style="color:var(--muted)">${fmt(m.pending)}</td>
-          <td style="min-width:160px">
-            <div class="sentiment-bar" title="Home ${ph}% / Draw ${pd}% / Away ${pa}%">
-              <div class="sentiment-seg" style="flex:${home};background:#5deda5" title="Home ${ph}%"></div>
-              <div class="sentiment-seg" style="flex:${draw};background:#ffd60a" title="Draw ${pd}%"></div>
-              <div class="sentiment-seg" style="flex:${away};background:#ff4d67" title="Away ${pa}%"></div>
+          <td style="min-width:180px">
+            <div style="font-size:11px;color:var(--muted);margin-bottom:4px">
+              <span style="color:#5deda5">${homeTeam} ${ph}%</span>
+              <span style="margin:0 4px">·</span>
+              <span style="color:#ffd60a">Draw ${pd}%</span>
+              <span style="margin:0 4px">·</span>
+              <span style="color:#ff4d67">${awayTeam} ${pa}%</span>
             </div>
-            <div style="font-size:10px;color:var(--muted);margin-top:3px">${ph}% / ${pd}% / ${pa}%</div>
+            <div class="sentiment-bar">
+              <div class="sentiment-seg" style="flex:${Math.max(home,0.01)};background:#5deda5"></div>
+              <div class="sentiment-seg" style="flex:${Math.max(draw,0.01)};background:#ffd60a"></div>
+              <div class="sentiment-seg" style="flex:${Math.max(away,0.01)};background:#ff4d67"></div>
+            </div>
           </td>
         </tr>`;
       }).join("")
