@@ -312,11 +312,11 @@ function App() {
     connectWallet: (walletName, address) => {
       setWallet({ name: walletName, id: "tonconnect", address });
       setTasksDone(t => ({ ...t, wallet: true }));
-      setEnergy(e => Math.min(9999, e + 10));
+      setEnergy(e => Math.min(9999, e + 50));
       // Persist to Supabase
       if (window.SupaDB && dbUser) {
         SupaDB.saveWalletAddress(dbUser.id, address, walletName);
-        SupaDB.recordEnergy(dbUser.id, "referral_activated", 10, energy + 10, { notes: "wallet_connect" });
+        SupaDB.recordEnergy(dbUser.id, "referral_activated", 50, energy + 50, { notes: "wallet_connect" });
       }
       // celebratory push
       setTimeout(() => pushNotification({
@@ -330,7 +330,7 @@ function App() {
     verifyChannel: () => {
       setChannelJoined(true);
       setTasksDone(t => ({ ...t, channel: true }));
-      setEnergy(e => Math.min(9999, e + 10));
+      setEnergy(e => Math.min(9999, e + 50));
     },
 
     // Invites sent — energy is awarded when the friend actually joins (DB trigger).
