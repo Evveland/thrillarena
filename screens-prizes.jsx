@@ -792,8 +792,9 @@ const Stat = ({ label, value, accent = "var(--text)" }) => (
 );
 
 // ─── TICKET EARNED TOAST ───────────────────────────────
-// Small bottom-card animation: "+1 ticket" when a Thrill action lands.
-const TicketEarnedToast = ({ tickets, action, onDismiss }) => {
+// Small bottom-card animation — shown after a prediction is locked.
+// `pending: true` means tickets aren't awarded yet (need correct result).
+const TicketEarnedToast = ({ tickets, action, pending, onDismiss }) => {
   React.useEffect(() => {
     const t = setTimeout(onDismiss, 2800);
     return () => clearTimeout(t);
@@ -813,10 +814,12 @@ const TicketEarnedToast = ({ tickets, action, onDismiss }) => {
         border: "1px solid rgba(255,159,28,0.5)",
         boxShadow: "0 8px 32px rgba(0,0,0,0.5), 0 0 24px rgba(255,159,28,0.3)",
       }}>
-        <TicketGlyph size={18} color="var(--orange)" />
+        <TicketGlyph size={18} color={pending ? "var(--text-dim)" : "var(--orange)"} />
         <div>
           <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}>
-            +{tickets} raffle ticket{tickets > 1 ? "s" : ""}
+            {pending
+              ? <>{tickets} ticket{tickets > 1 ? "s" : ""} <span style={{ color: "var(--text-faint)", fontWeight: 400 }}>if correct</span></>
+              : <>+{tickets} raffle ticket{tickets > 1 ? "s" : ""}</>}
           </div>
           <div style={{ fontSize: 10, color: "var(--text-faint)" }}>{action}</div>
         </div>

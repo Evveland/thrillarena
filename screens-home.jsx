@@ -288,7 +288,7 @@ const HomeScreen = ({ state, actions }) => {
       {/* ─── USER STATS STRIP ─── */}
       <div style={{ padding: "12px 20px 0", display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
         <StatTile label="Predictions" value={`${totalPicks}/${ALL_MATCHES.length}`} />
-        <StatTile label="Tickets" value={todayTickets + (state.groupTickets || 0)} accent="var(--orange)" icon={<TicketGlyph size={13} color="#FF9F1C" />} />
+        <StatTile label="Tickets" value={myRank !== "—" ? (state.leaderboard.find(u=>u.id===state.dbUser?.id)?.total_tickets ?? 0) : 0} accent="var(--orange)" icon={<TicketGlyph size={13} color="#FF9F1C" />} />
         <StatTile label="Rank" value={myRank === "—" ? "—" : `#${myRank}`} accent="var(--orange)" />
       </div>
 

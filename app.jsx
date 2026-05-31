@@ -235,7 +235,7 @@ function App() {
           ...ps,
           dailyActions: { ...ps.dailyActions, predictions: ps.dailyActions.predictions + 1 },
           dailyTickets: ps.dailyTickets + ticketsAwarded,
-          ticketToast: { tickets: ticketsAwarded, action: `Prediction locked in at ${confidence}% confidence`, _ts: Date.now() },
+          ticketToast: { tickets: ticketsAwarded, action: `${ticketsAwarded} ticket${ticketsAwarded !== 1 ? "s" : ""} if correct · ${confidence}% confidence`, pending: true, _ts: Date.now() },
         }));
         // ── Persist to Supabase ───────────────────────────────────
         if (window.SupaDB && dbUser) {
@@ -530,6 +530,7 @@ function App() {
           key={poolState.ticketToast._ts}
           tickets={poolState.ticketToast.tickets}
           action={poolState.ticketToast.action}
+          pending={poolState.ticketToast.pending}
           onDismiss={actions.dismissTicketToast}
         />
       )}
