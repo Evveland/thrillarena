@@ -68,18 +68,35 @@ module.exports = async function handler(req, res) {
   const { initData, operation, payload = {} } = req.body || {};
   if (!operation) return res.status(400).json({ error: "operation required" });
 
-  // Identify user from Telegram initData or payload fallback
+  // Identify user — three tiers:
+  // 1. Verified Telegram initData (most trusted — derives deterministic UUID from telegram_id)
+  // 2. payload.telegramId provided by client (unverified but functional)
+  // 3. payload.userId (stable localStorage UUID — always present as fallback)
   let userId, telegramId, tgUser = {};
+
   if (initData && BOT_TOKEN) {
     const verified = verifyTelegram(initData, BOT_TOKEN);
     if (verified?.id) {
       telegramId = Number(verified.id);
       userId     = telegramIdToUUID(telegramId);
       tgUser     = verified;
+      console.log("[write] tier-1 auth: telegram", telegramId, "→", userId);
     }
   }
-  if (!userId && payload.userId) { userId = payload.userId; telegramId = payload.telegramId || null; }
-  if (!userId) return res.status(400).json({ error: "Cannot identify user — no initData and no userId in payload" });
+
+  if (!userId && payload.telegramId) {
+    telegramId = Number(payload.telegramId);
+    userId     = telegramIdToUUID(telegramId);
+    console.log("[write] tier-2 auth: unverified telegram_id", telegramId, "→", userId);
+  }
+
+  if (!userId && payload.userId) {
+    userId     = payload.userId;
+    telegramId = payload.telegramId || null;
+    console.log("[write] tier-3 auth: localStorage userId", userId);
+  }
+
+  if (!userId) return res.status(400).json({ error: "Cannot identify user" });
 
   const BASE = SUPABASE_URL;
 

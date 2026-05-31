@@ -45,13 +45,32 @@
     }
   }
 
+  // ── Stable local user ID (fallback when initData verification fails) ──
+  function getLocalUserId() {
+    let id = localStorage.getItem("ta_user_id");
+    if (!id) {
+      id = (typeof crypto !== "undefined" && crypto.randomUUID)
+        ? crypto.randomUUID()
+        : "u-" + Math.random().toString(36).slice(2, 18);
+      localStorage.setItem("ta_user_id", id);
+    }
+    return id;
+  }
+
   // ── User init ──────────────────────────────────────────
   async function initUser() {
-    const tg = window.Telegram?.WebApp?.initDataUnsafe?.user || {};
+    const tg       = window.Telegram?.WebApp?.initDataUnsafe?.user || {};
+    const localId  = getLocalUserId();
+    const tgId     = tg.id ? Number(tg.id) : null;
+
     const result = await write("upsert_user", {
-      username:     tg.username    || null,
-      display_name: tg.first_name  || null,
-      referred_by:  null, // set below if start_param detected
+      // Pass userId + telegramId explicitly so the server can identify the
+      // user even when TELEGRAM_BOT_TOKEN verification is unavailable.
+      userId:       localId,
+      telegramId:   tgId,
+      username:     tg.username   || null,
+      display_name: tg.first_name || null,
+      referred_by:  null,
     });
 
     // Parse referral from start_param
@@ -105,23 +124,29 @@
 
   // ── Write helpers (all proxied) ────────────────────────
   async function savePrediction(userId, matchExternalId, predictionValue, energyCost) {
-    await write("save_prediction", { userId, matchId: matchExternalId, predictionValue, energyCost });
+    const r = await write("save_prediction", { userId, telegramId: getTelegramId(), matchId: matchExternalId, predictionValue, energyCost });
+    if (!r) console.warn("[SupaDB] prediction NOT saved — check /api/write logs");
   }
 
   async function recordEnergy(userId, actionType, delta, balanceAfter, opts = {}) {
-    await write("record_energy", { userId, actionType, delta, balanceAfter, relatedUserId: opts.relatedUserId || null, notes: opts.notes || null });
+    await write("record_energy", { userId, telegramId: getTelegramId(), actionType, delta, balanceAfter, relatedUserId: opts.relatedUserId || null, notes: opts.notes || null });
   }
 
   async function saveDeposit(userId, depositNumber, amount, currency, multiplier) {
-    await write("save_deposit", { userId, depositNumber, amount, currency, multiplier });
+    await write("save_deposit", { userId, telegramId: getTelegramId(), depositNumber, amount, currency, multiplier });
   }
 
   async function saveTask(userId, taskType) {
-    await write("save_task", { userId, taskType });
+    await write("save_task", { userId, telegramId: getTelegramId(), taskType });
   }
 
   async function saveWalletAddress(userId, address, walletName) {
-    await write("save_wallet", { userId, address, walletName });
+    await write("save_wallet", { userId, telegramId: getTelegramId(), address, walletName });
+  }
+
+  function getTelegramId() {
+    const tg = window.Telegram?.WebApp?.initDataUnsafe?.user;
+    return tg?.id ? Number(tg.id) : null;
   }
 
   // ── Leaderboard (public SECURITY DEFINER RPC) ─────────
