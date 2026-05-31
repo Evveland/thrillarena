@@ -181,6 +181,10 @@
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2L15 22 11 13 2 9l20-7z"/></svg>
       Broadcast
     </button>
+    <button class="nav-item" onclick="nav('grade')" data-section="grade">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+      Grade Results
+    </button>
     <div class="sidebar-bottom">
       <button class="nav-item" onclick="logout()" style="color:var(--red)">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
@@ -288,6 +292,63 @@
             <thead><tr><th>Match</th><th>Total</th><th>Correct</th><th>Pending</th><th>Picks breakdown + Sentiment</th></tr></thead>
             <tbody id="match-sentiment-tbody"></tbody>
           </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── GRADE RESULTS ────────────────────── -->
+    <div class="section" id="section-grade">
+      <div class="topbar"><h2>Grade Results</h2></div>
+      <div class="content">
+        <div class="broadcast-box">
+          <h3>⚽ Run Results Agent</h3>
+          <p style="font-size:13px;color:var(--muted);margin-bottom:14px">
+            Fetches finished match results from football-data.org, updates scores, 
+            grades predictions and awards raffle tickets automatically.
+          </p>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+            <button class="btn btn-primary" onclick="runAgent()">Run agent now</button>
+            <button class="btn btn-ghost" onclick="runAgent(true)">Dry run (no writes)</button>
+            <span id="agent-status" style="font-size:12px;color:var(--muted)"></span>
+          </div>
+          <pre id="agent-log" style="margin-top:14px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:11px;color:var(--teal);max-height:300px;overflow-y:auto;display:none"></pre>
+        </div>
+
+        <div class="broadcast-box">
+          <h3>🎯 Manual Match Result</h3>
+          <p style="font-size:13px;color:var(--muted);margin-bottom:14px">
+            Enter the result for a specific match. Use this when the API hasn't updated yet or for testing.
+          </p>
+          <div style="display:grid;grid-template-columns:1fr 80px 80px;gap:10px;margin-bottom:12px">
+            <div class="field-row" style="margin:0">
+              <label>Match ID (external_id)</label>
+              <input type="text" id="grade-match-id" placeholder="e.g. g-A-1" />
+            </div>
+            <div class="field-row" style="margin:0">
+              <label>Home score</label>
+              <input type="text" id="grade-home-score" placeholder="2" />
+            </div>
+            <div class="field-row" style="margin:0">
+              <label>Away score</label>
+              <input type="text" id="grade-away-score" placeholder="1" />
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:center">
+            <button class="btn btn-primary" onclick="gradeMatch()">Grade match</button>
+            <span id="grade-status" style="font-size:12px;color:var(--muted)"></span>
+          </div>
+          <pre id="grade-log" style="margin-top:14px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:11px;color:var(--teal);max-height:200px;overflow-y:auto;display:none"></pre>
+        </div>
+
+        <div class="broadcast-box">
+          <h3>⚙️ Agent configuration</h3>
+          <div style="font-size:13px;color:var(--text-dim);line-height:1.8">
+            <div>• Runs automatically every <b style="color:var(--text)">30 minutes</b> via Vercel Cron</div>
+            <div>• Data source: <b style="color:var(--text)">football-data.org</b> (set <code style="background:var(--surface);padding:2px 6px;border-radius:4px">FOOTBALL_DATA_API_KEY</code> in Vercel)</div>
+            <div>• Security: <code style="background:var(--surface);padding:2px 6px;border-radius:4px">CRON_SECRET</code> in Vercel (any string)</div>
+            <div>• Tickets awarded via <code style="background:var(--surface);padding:2px 6px;border-radius:4px">award_prediction_tickets()</code> DB function</div>
+            <div>• Confidence tiers: 50–64% → ×1 ticket · 65–79% → ×2 · 80–100% → ×3</div>
+          </div>
         </div>
       </div>
     </div>
@@ -824,6 +885,52 @@ const TEMPLATES = {
 function setTemplate(key) {
   document.getElementById("bc-message").value = TEMPLATES[key] || "";
 }
+async function runAgent(dryRun = false) {
+  const status = document.getElementById("agent-status");
+  const log    = document.getElementById("agent-log");
+  status.textContent = "Running…";
+  log.style.display = "none";
+  const CRON_SECRET = localStorage.getItem("ta_cron_secret") || prompt("Enter CRON_SECRET (from Vercel):");
+  if (!CRON_SECRET) return;
+  localStorage.setItem("ta_cron_secret", CRON_SECRET);
+  const r = await fetch("/api/cron/results", {
+    method: "POST",
+    headers: { "Authorization": `Bearer ${CRON_SECRET}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ dryRun }),
+  });
+  const d = await r.json();
+  status.textContent = d.ok ? `✓ Updated ${d.updated} matches, graded ${d.graded} predictions` : `Error: ${d.error}`;
+  if (d.log?.length) {
+    log.style.display = "block";
+    log.textContent = d.log.join("\n");
+    log.scrollTop = log.scrollHeight;
+  }
+}
+
+async function gradeMatch() {
+  const matchId   = document.getElementById("grade-match-id").value.trim();
+  const homeScore = parseInt(document.getElementById("grade-home-score").value);
+  const awayScore = parseInt(document.getElementById("grade-away-score").value);
+  const status    = document.getElementById("grade-status");
+  const log       = document.getElementById("grade-log");
+  if (!matchId || isNaN(homeScore) || isNaN(awayScore)) {
+    status.textContent = "Fill all fields"; return;
+  }
+  status.textContent = "Grading…";
+  const r = await api("/grade", { method: "POST", body: JSON.stringify({ matchId, homeScore, awayScore }) });
+  const d = await r.json();
+  if (d.ok) {
+    status.textContent = `✓ ${d.correct} correct, ${d.incorrect} incorrect (${d.total} total)`;
+    toast(`Graded ${matchId}: ${d.correct} correct picks ticketed`);
+  } else {
+    status.textContent = `Error: ${d.error}`;
+  }
+  if (d.log?.length) {
+    log.style.display = "block";
+    log.textContent = d.log.join("\n");
+  }
+}
+
 async function sendBroadcast() {
   const msg = document.getElementById("bc-message").value;
   if (!msg) return;

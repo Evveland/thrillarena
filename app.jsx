@@ -239,7 +239,7 @@ function App() {
         // ── Persist to Supabase ───────────────────────────────────
         if (window.SupaDB && dbUser) {
           const energyCost = isFree ? 0 : cost;
-          SupaDB.savePrediction(dbUser.id, matchId, teamCode, energyCost);
+          SupaDB.savePrediction(dbUser.id, matchId, teamCode, energyCost, confidence);
           if (!isFree) {
             const newBal = Math.max(0, energy - cost);
             SupaDB.recordEnergy(dbUser.id, "prediction_submitted", -cost, newBal);

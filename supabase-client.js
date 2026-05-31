@@ -123,8 +123,8 @@
   }
 
   // ── Write helpers (all proxied) ────────────────────────
-  async function savePrediction(userId, matchExternalId, predictionValue, energyCost) {
-    const r = await write("save_prediction", { userId, telegramId: getTelegramId(), matchId: matchExternalId, predictionValue, energyCost });
+  async function savePrediction(userId, matchExternalId, predictionValue, energyCost, confidence) {
+    const r = await write("save_prediction", { userId, telegramId: getTelegramId(), matchId: matchExternalId, predictionValue, energyCost, confidence: confidence || 60 });
     if (!r) console.warn("[SupaDB] prediction NOT saved — check /api/write logs");
   }
 

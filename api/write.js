@@ -128,7 +128,7 @@ module.exports = async function handler(req, res) {
 
       // ── Save prediction ──────────────────────────────────
       case "save_prediction": {
-        const { matchId, predictionValue, energyCost } = payload;
+        const { matchId, predictionValue, energyCost, confidence } = payload;
         // Resolve match UUID from external_id
         const mRes = await sbQuery(
           `${BASE}/rest/v1/matches?external_id=eq.${encodeURIComponent(matchId)}&select=id`,
@@ -140,14 +140,13 @@ module.exports = async function handler(req, res) {
         const r = await sbQuery(
           `${BASE}/rest/v1/predictions`,
           SERVICE_KEY, "POST",
-          { user_id: userId, match_id: match.id, prediction_value: predictionValue, energy_cost: energyCost || 0 }
+          { user_id: userId, match_id: match.id, prediction_value: predictionValue, energy_cost: energyCost || 0, confidence: confidence || 60 }
         );
         if (!r.ok && r.status === 409) {
-          // Conflict — update existing prediction
           await sbQuery(
             `${BASE}/rest/v1/predictions?user_id=eq.${userId}&match_id=eq.${match.id}`,
             SERVICE_KEY, "PATCH",
-            { prediction_value: predictionValue, energy_cost: energyCost || 0 }
+            { prediction_value: predictionValue, energy_cost: energyCost || 0, confidence: confidence || 60 }
           );
         }
         return res.json({ ok: true });
