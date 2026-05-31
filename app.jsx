@@ -220,6 +220,8 @@ function App() {
     },
     confirmPick: (matchId, teamCode, cost, confidence = 60) => {
       const wasNew = !predictions[matchId];
+      // ── Confidence → base ticket tiers (needed outside if block) ──
+      const confidenceBase = confidence < 65 ? 1 : confidence < 80 ? 2 : 3;
       setPredictions(p => ({ ...p, [matchId]: teamCode }));
       if (wasNew) {
         const isFree = freePicksLeft > 0;
@@ -228,9 +230,6 @@ function App() {
           setEnergy(e => e - cost);
           setPicksMade(n => n + 1);
         }
-        // ── Confidence → base ticket tiers ─────────────────────────
-        // 50–64% = ×1, 65–79% = ×2, 80–100% = ×3
-        const confidenceBase = confidence < 65 ? 1 : confidence < 80 ? 2 : 3;
         const ticketsAwarded = confidenceBase * boost.multiplier;
         setPoolState(ps => ({
           ...ps,
