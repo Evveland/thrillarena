@@ -68,7 +68,9 @@ function App() {
   // after `boost` is in scope — see the useEffect after state setup.
 
   // App state
-  const [screen, setScreen] = React.useState("onboarding");
+  const [screen, setScreen] = React.useState(
+    () => localStorage.getItem("ta_onboarded") === "1" ? "home" : "onboarding"
+  );
   const [modal, setModal] = React.useState(null);
   const [energy, setEnergy] = React.useState(tweaks.startingEnergy);
   const [predictions, setPredictions] = React.useState({});
@@ -512,7 +514,10 @@ function App() {
 
       {/* onboarding */}
       {screen === "onboarding" && (
-        <Onboarding onStart={() => setScreen("home")} />
+        <Onboarding onStart={() => {
+          localStorage.setItem("ta_onboarded", "1");
+          setScreen("home");
+        }} />
       )}
 
       {/* ── Push-style notification toast (sits above everything) ── */}
