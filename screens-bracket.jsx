@@ -976,12 +976,12 @@ const PickResultModal = ({ teamCode, matchId, confidence, effectiveTickets, free
 
         {/* Boost upsell for unboosted users */}
         {(state?.boost?.multiplier || 1) <= 1 && tix < 3 && (
-          <button className="btn" onClick={() => { onClose(); state?.actions?.openBoostHub?.(); }}
+          <a href="https://thrill.com" target="_blank" rel="noopener noreferrer"
             style={{
+              display: "flex", alignItems: "center", gap: 10,
               width: "calc(100% - 8px)", marginBottom: 8, padding: "12px 16px",
               background: "rgba(255,77,103,0.08)", border: "1px solid rgba(255,77,103,0.3)",
-              borderRadius: 14, display: "flex", alignItems: "center", gap: 10,
-              textAlign: "left",
+              borderRadius: 14, textDecoration: "none",
             }}>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 12, fontWeight: 700, color: "#FF4D67", marginBottom: 2 }}>
@@ -994,7 +994,7 @@ const PickResultModal = ({ teamCode, matchId, confidence, effectiveTickets, free
             <span style={{ fontSize: 11, color: "#FF4D67", fontWeight: 700, whiteSpace: "nowrap" }}>
               Deposit →
             </span>
-          </button>
+          </a>
         )}
 
         <button className="btn btn-primary" onClick={onClose} style={{ width: "calc(100% - 8px)" }}>Done</button>
