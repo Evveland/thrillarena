@@ -258,38 +258,114 @@ const KnockoutView = ({ stage, predictions, actions }) => {
 };
 
 // ─── Time-zone chip row ──────────────────────────────────
-const TZRow = ({ times, dense }) => {
+// Team code → IANA timezone
+const TEAM_TZ = {
+  MEX:"America/Mexico_City", RSA:"Africa/Johannesburg", KOR:"Asia/Seoul",
+  CZE:"Europe/Prague",       CAN:"America/Toronto",     BIH:"Europe/Sarajevo",
+  USA:"America/New_York",    PAR:"America/Asuncion",    QAT:"Asia/Qatar",
+  SUI:"Europe/Zurich",       BRA:"America/Sao_Paulo",   MAR:"Africa/Casablanca",
+  HAI:"America/Port-au-Prince", SCO:"Europe/London",    GER:"Europe/Berlin",
+  CUW:"America/Curacao",     NED:"Europe/Amsterdam",    JPN:"Asia/Tokyo",
+  CIV:"Africa/Abidjan",      ECU:"America/Guayaquil",   SWE:"Europe/Stockholm",
+  TUN:"Africa/Tunis",        ESP:"Europe/Madrid",        CPV:"Atlantic/Cape_Verde",
+  BEL:"Europe/Brussels",     EGY:"Africa/Cairo",         KSA:"Asia/Riyadh",
+  URU:"America/Montevideo",  IRN:"Asia/Tehran",           NZL:"Pacific/Auckland",
+  FRA:"Europe/Paris",        SEN:"Africa/Dakar",          IRQ:"Asia/Baghdad",
+  NOR:"Europe/Oslo",         ARG:"America/Argentina/Buenos_Aires",
+  ALG:"Africa/Algiers",      AUT:"Europe/Vienna",         JOR:"Asia/Amman",
+  POR:"Europe/Lisbon",       COD:"Africa/Kinshasa",       ENG:"Europe/London",
+  CRO:"Europe/Zagreb",       GHA:"Africa/Accra",          PAN:"America/Panama",
+  UZB:"Asia/Tashkent",       COL:"America/Bogota",        TUR:"Europe/Istanbul",
+  AUS:"Australia/Sydney",    ITA:"Europe/Rome",            NGA:"Africa/Lagos",
+};
+
+// Venue → IANA timezone (for the LOCAL label)
+const VENUE_TZ = {
+  AZTECA:"America/Mexico_City", BANORTE:"America/Mexico_City",
+  GDL:"America/Mexico_City",    MTY:"America/Mexico_City",
+  ATL:"America/New_York",       BOS:"America/New_York",
+  MIA:"America/New_York",       NYNJ:"America/New_York",
+  PHI:"America/New_York",       TOR:"America/Toronto",
+  DAL:"America/Chicago",        HOU:"America/Chicago",
+  KC:"America/Chicago",         LA:"America/Los_Angeles",
+  SF:"America/Los_Angeles",     SEA:"America/Los_Angeles",
+  BC:"America/Vancouver",
+};
+
+// Format a Date in a given IANA timezone as "HH:MM"
+function fmtInTZ(date, tz) {
+  try {
+    return new Intl.DateTimeFormat("en-GB", {
+      hour: "2-digit", minute: "2-digit", timeZone: tz, hour12: false,
+    }).format(date);
+  } catch { return "—"; }
+}
+
+const TZRow = ({ times, dense, homeCode, awayCode, venue, matchDate }) => {
   if (!times) return null;
-  const labels = [
-    ["local", "LOCAL"],
-    ["mex",   "MEX"],
-    ["arg",   "ARG"],
-    ["esp",   "ESP"],
-  ];
+
+  // Build the UTC Date from local time + venue timezone
+  let matchUTC = null;
+  const venueTZ = VENUE_TZ[venue] || "America/New_York";
+  if (matchDate && times.local) {
+    try {
+      const [h, m] = times.local.split(":").map(Number);
+      // Parse the date in the venue's local timezone
+      const str = `${matchDate}T${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:00`;
+      const localDate = new Date(new Intl.DateTimeFormat("en-CA", {
+        timeZone: venueTZ, year:"numeric", month:"2-digit", day:"2-digit",
+        hour:"2-digit", minute:"2-digit", second:"2-digit", hour12: false,
+      }).format(new Date(str)).replace(/(\d{4})\/(\d{2})\/(\d{2})/, "$1-$2-$3").replace(",",""));
+      // Simpler: use offset from local time string directly
+      matchUTC = new Date(`${matchDate}T${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:00`);
+    } catch {}
+  }
+
+  // Determine which zones to show: LOCAL + home country + away country
+  const homeTZ = homeCode ? TEAM_TZ[homeCode] : null;
+  const awayTZ = awayCode ? TEAM_TZ[awayCode] : null;
+  const homeLabel = homeCode || "HOME";
+  const awayLabel = awayCode || "AWAY";
+
+  // Build display rows — always show LOCAL; add home/away if different from local
+  const rows = [{ label: "LOCAL", time: times.local, isLocal: true }];
+
+  if (matchUTC && homeTZ && homeTZ !== venueTZ) {
+    rows.push({ label: homeLabel, time: fmtInTZ(matchUTC, homeTZ) });
+  } else if (times.mex && homeCode === "MEX") {
+    rows.push({ label: "MEX", time: times.mex });
+  }
+
+  if (matchUTC && awayTZ && awayTZ !== venueTZ && awayTZ !== homeTZ) {
+    rows.push({ label: awayLabel, time: fmtInTZ(matchUTC, awayTZ) });
+  } else if (!rows[1] && times.arg) {
+    rows.push({ label: "ARG", time: times.arg });
+  }
+
+  // Always cap at 4 columns; fill with ESP if < 4
+  if (rows.length < 4 && times.esp) rows.push({ label: "ESP", time: times.esp });
+  if (rows.length < 4 && times.arg && rows.every(r => r.label !== "ARG")) rows.push({ label: "ARG", time: times.arg });
+
+  const cols = Math.min(rows.length, 4);
+
   return (
     <div style={{
-      display: "grid", gridTemplateColumns: "repeat(4, 1fr)",
-      gap: 6,
-      marginTop: dense ? 8 : 10,
+      display: "grid", gridTemplateColumns: `repeat(${cols}, 1fr)`,
+      gap: 6, marginTop: dense ? 8 : 10,
     }}>
-      {labels.map(([k, l]) => (
-        <div key={k} style={{
-          background: "rgba(0,0,0,0.18)",
-          borderRadius: 8,
+      {rows.slice(0, 4).map((r) => (
+        <div key={r.label} style={{
+          background: "rgba(0,0,0,0.18)", borderRadius: 8,
           padding: dense ? "5px 6px" : "6px 8px",
-          textAlign: "center",
-          border: "1px solid var(--line-soft)",
+          textAlign: "center", border: "1px solid var(--line-soft)",
         }}>
-          <div style={{
-            fontSize: 9, color: "var(--text-faint)",
-            letterSpacing: "0.1em", textTransform: "uppercase",
-            fontWeight: 700, marginBottom: 1,
-          }}>{l}</div>
+          <div style={{ fontSize: 9, color: "var(--text-faint)", letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 700, marginBottom: 1 }}>
+            {r.label}
+          </div>
           <div className="num" style={{
             fontFamily: "var(--display)", fontSize: dense ? 12 : 13,
-            color: k === "local" ? "var(--teal)" : "var(--text)",
-            letterSpacing: "0.01em",
-          }}>{times[k]}</div>
+            color: r.isLocal ? "var(--teal)" : "var(--text)", letterSpacing: "0.01em",
+          }}>{r.time}</div>
         </div>
       ))}
     </div>
@@ -408,7 +484,7 @@ const MatchCard = ({ match, pick, onPredict, index, dense }) => {
       )}
 
       {/* times in 4 timezones */}
-      {match.times ? <TZRow times={match.times} dense={dense} /> : (
+      {match.times ? <TZRow times={match.times} dense={dense} homeCode={match.home} awayCode={match.away} venue={match.venue} matchDate={match.date} /> : (
         <div style={{
           marginTop: dense ? 8 : 10,
           padding: "8px 10px",
@@ -534,7 +610,7 @@ const PredictModal = ({ matchId, state, actions, onClose }) => {
         {match.times && (
           <div style={{ marginBottom: 18 }}>
             <div className="eyebrow" style={{ marginBottom: 8 }}>Kickoff times</div>
-            <TZRow times={match.times} />
+            <TZRow times={match.times} homeCode={match.home} awayCode={match.away} venue={match.venue} matchDate={match.date} />
           </div>
         )}
 
