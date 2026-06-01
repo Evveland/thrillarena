@@ -551,18 +551,17 @@ const PredictModal = ({ matchId, state, actions, onClose }) => {
   const currentPick = predictions[matchId];
   const [pick, setPick] = React.useState(currentPick || null);
   const [confidence, setConfidence] = React.useState(60);
-  const [odds, setOdds] = React.useState(null);
-  const [oddsLoading, setOddsLoading] = React.useState(true);
-
-  // Fetch live odds + AI suggestion when modal opens
+  // Raffle win odds — user's tickets vs pool total for today's daily raffle
+  const [raffleOdds, setRaffleOdds] = React.useState(null);
   React.useEffect(() => {
-    if (!matchId) return;
-    setOddsLoading(true);
-    fetch(`/api/odds?matchId=${matchId}`)
-      .then(r => r.ok ? r.json() : null)
-      .then(data => { setOdds(data); setOddsLoading(false); })
-      .catch(() => setOddsLoading(false));
-  }, [matchId]);
+    if (!matchId || !state.dbUser?.id || !window.SupaDB) return;
+    const raffleKey = match?.date
+      ? `daily_${match.date.replace(/-/g,"_")}`
+      : "final_mega";
+    window.SupaDB.db
+      .rpc("get_raffle_odds", { p_user_id: state.dbUser.id, p_raffle_key: raffleKey })
+      .then(({ data }) => { if (data) setRaffleOdds(data); });
+  }, [matchId, state.dbUser?.id]);
   const stageLabel = STAGES.find(s => s.key === match.stage)?.label || "Match";
   const venue = match.venue ? VENUES[match.venue] : null;
 
@@ -655,72 +654,51 @@ const PredictModal = ({ matchId, state, actions, onClose }) => {
           </div>
         )}
 
-        {/* ── AI Odds Panel ─────────────────────────────── */}
-        {(home.resolved && away.resolved) && (
-          <div style={{ marginBottom: 16 }}>
-            {oddsLoading ? (
-              <div style={{ padding: "12px 14px", borderRadius: 14, background: "rgba(255,255,255,0.03)", border: "1px solid var(--line-soft)", display: "flex", alignItems: "center", gap: 10 }}>
-                <div style={{ width: 14, height: 14, borderRadius: "50%", border: "2px solid var(--teal)", borderTopColor: "transparent", animation: "spin 0.9s linear infinite" }} />
-                <span style={{ fontSize: 12, color: "var(--text-faint)" }}>Fetching live odds…</span>
+        {/* ── Raffle Win Odds Panel ────────────────────── */}
+        {(home.resolved && away.resolved) && raffleOdds && (() => {
+          const total   = Number(raffleOdds.total_tickets) || 0;
+          const userTix = Number(raffleOdds.user_tickets)  || 0;
+          const mult    = state.boost?.multiplier || 1;
+          const baseTickets = confidenceTier; // tickets this correct pick would earn at 1×
+          const userWithPick   = userTix + baseTickets * 1;
+          const userWithBoost  = userTix + baseTickets * mult;
+          const poolWithPick   = total   + baseTickets * 1;
+          const poolWithBoost  = total   + baseTickets * mult;
+          const oddsNow   = poolWithPick  > 0 ? (userWithPick  / poolWithPick  * 100) : 0;
+          const oddsBoost = poolWithBoost > 0 ? (userWithBoost / poolWithBoost * 100) : 0;
+          const fmtOdds = p => p >= 1 ? p.toFixed(1)+"%" : p > 0 ? "1 in "+Math.round(1/(p/100)).toLocaleString() : "< 0.01%";
+          const entrants = Number(raffleOdds.entrants) || 0;
+          return (
+            <div style={{ marginBottom: 16, padding: "12px 14px", borderRadius: 14, background: "rgba(93,237,165,0.05)", border: "1px solid rgba(93,237,165,0.2)" }}>
+              <div style={{ fontSize: 10, color: "var(--teal)", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700, marginBottom: 10 }}>
+                📊 Your odds in today's raffle — {entrants > 0 ? `${entrants} players` : "be the first!"}
               </div>
-            ) : odds?.odds_home ? (
-              <div style={{ borderRadius: 14, overflow: "hidden", border: "1px solid rgba(93,237,165,0.25)", background: "rgba(93,237,165,0.04)" }}>
-                {/* Odds table */}
-                <div style={{ padding: "10px 14px 8px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontSize: 10, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
-                    Live odds · {odds.bookmaker || "bookmaker"}
-                  </span>
-                  <span style={{ fontSize: 10, color: "var(--teal)" }}>⚡ AI Pick</span>
+              <div style={{ display: "grid", gridTemplateColumns: mult > 1 ? "1fr auto 1fr" : "1fr", gap: 8, marginBottom: entrants > 0 ? 8 : 0 }}>
+                <div style={{ textAlign: "center" }}>
+                  <div style={{ fontSize: 10, color: "var(--text-faint)", marginBottom: 3 }}>If correct (no boost)</div>
+                  <div className="num" style={{ fontFamily: "var(--display)", fontSize: 18, color: "var(--text-dim)" }}>{fmtOdds(oddsNow)}</div>
+                  <div style={{ fontSize: 10, color: "var(--text-faint)", marginTop: 2 }}>{Math.round(userWithPick)} tickets</div>
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: odds.odds_draw ? "1fr 1fr 1fr" : "1fr 1fr", gap: 1, background: "var(--line-soft)", margin: "0 14px 10px" }}>
-                  {[
-                    { label: home.short || match?.home, odds: odds.odds_home, team: match?.home },
-                    ...(odds.odds_draw ? [{ label: "Draw", odds: odds.odds_draw, team: "draw" }] : []),
-                    { label: away.short || match?.away, odds: odds.odds_away, team: match?.away },
-                  ].map((o, i) => {
-                    const prob = Math.round((1 / o.odds) * 100);
-                    const isBest = (!odds.odds_draw && o.odds === Math.min(odds.odds_home, odds.odds_away)) ||
-                      (odds.odds_draw && o.odds === Math.min(odds.odds_home, odds.odds_draw, odds.odds_away));
-                    return (
-                      <button key={i} className="btn" onClick={() => {
-                        setPick(o.team === "draw" ? "draw" : o.team);
-                        if (odds.suggested_confidence) setConfidence(odds.suggested_confidence);
-                      }} style={{
-                        padding: "8px 6px", textAlign: "center",
-                        background: isBest ? "rgba(93,237,165,0.12)" : "rgba(255,255,255,0.02)",
-                        border: "none", cursor: "pointer",
-                      }}>
-                        <div style={{ fontSize: 11, color: isBest ? "var(--teal)" : "var(--text-faint)", marginBottom: 2, fontWeight: 700 }}>{o.label}</div>
-                        <div style={{ fontFamily: "var(--display)", fontSize: 18, color: isBest ? "var(--teal)" : "var(--text)" }} className="num">{o.odds?.toFixed(2)}</div>
-                        <div style={{ fontSize: 10, color: "var(--text-faint)" }}>{prob}%</div>
-                      </button>
-                    );
-                  })}
-                </div>
-                {/* AI suggestion */}
-                {odds.suggestion && (
-                  <div style={{ padding: "8px 14px 12px", fontSize: 12, color: "var(--text-dim)", lineHeight: 1.5, borderTop: "1px solid var(--line-soft)" }}>
-                    <span style={{ color: "var(--teal)", fontWeight: 700 }}>⚡ </span>
-                    {odds.suggestion}
-                    {odds.suggested_confidence && (
-                      <button className="btn" onClick={() => setConfidence(odds.suggested_confidence)} style={{
-                        marginLeft: 8, padding: "2px 8px", fontSize: 10, borderRadius: 6,
-                        background: "rgba(93,237,165,0.15)", border: "1px solid rgba(93,237,165,0.3)",
-                        color: "var(--teal)", fontWeight: 700,
-                      }}>
-                        Apply {odds.suggested_confidence}%
-                      </button>
-                    )}
+                {mult > 1 && <>
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+                    <div style={{ padding: "3px 7px", borderRadius: 6, background: "rgba(255,159,28,0.2)", fontSize: 10, fontWeight: 800, color: "var(--orange)", fontFamily: "var(--display)" }}>
+                      {(oddsBoost / Math.max(oddsNow, 0.001)).toFixed(1)}×
+                    </div>
+                    <div style={{ fontSize: 16, color: "var(--orange)", marginTop: 2 }}>→</div>
                   </div>
-                )}
+                  <div style={{ textAlign: "center" }}>
+                    <div style={{ fontSize: 10, color: "var(--orange)", marginBottom: 3, fontWeight: 700 }}>With {fmtMult(mult)} boost</div>
+                    <div className="num" style={{ fontFamily: "var(--display)", fontSize: 18, color: "var(--orange)" }}>{fmtOdds(oddsBoost)}</div>
+                    <div style={{ fontSize: 10, color: "var(--orange)", marginTop: 2, opacity: 0.8 }}>{Math.round(userWithBoost)} tickets</div>
+                  </div>
+                </>}
               </div>
-            ) : odds?.source === "no_key" || odds?.source === "unavailable" ? (
-              <div style={{ padding: "10px 14px", borderRadius: 12, background: "rgba(255,255,255,0.02)", border: "1px solid var(--line-soft)", fontSize: 11, color: "var(--text-faint)" }}>
-                Odds unavailable for this match · set your confidence manually
-              </div>
-            ) : null}
-          </div>
-        )}
+              {entrants === 0 && (
+                <div style={{ fontSize: 11, color: "var(--text-faint)" }}>First correct pick today → you lead the daily raffle</div>
+              )}
+            </div>
+          );
+        })()}
 
         {/* Confidence */}
         {(home.resolved && away.resolved) && (
