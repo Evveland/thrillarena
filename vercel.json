@@ -9,6 +9,27 @@
   ],
   "headers": [
     {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net https://telegram.org https://tonconnect.io; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co https://api.telegram.org https://tonapi.io https://api.football-data.org; frame-ancestors https://web.telegram.org https://k.web.telegram.org https://z.web.telegram.org"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "ALLOW-FROM https://web.telegram.org"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        }
+      ]
+    },
+    {
       "source": "/:path*.jsx",
       "headers": [
         { "key": "Content-Type", "value": "text/javascript; charset=utf-8" }

@@ -72,7 +72,7 @@ function gradeOutcome(homeScore, awayScore, predValue, homeTeam, awayTeam) {
 
 // ── Main handler ─────────────────────────────────────────────
 module.exports = async function handler(req, res) {
-  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Origin", process.env.ADMIN_ORIGIN || "*");
   if (req.method === "OPTIONS") return res.status(200).end();
 
   // Auth: accept GET (Vercel cron uses Authorization header) or POST with secret
@@ -82,13 +82,11 @@ module.exports = async function handler(req, res) {
 
   if (!SERVICE_KEY) return res.status(500).json({ error: "SUPABASE_SERVICE_KEY not set" });
 
-  // Validate secret (skip check if CRON_SECRET is not configured — dev mode)
-  if (CRON_SECRET) {
-    const authHeader = req.headers["authorization"] || "";
-    const bodySecret = req.body?.secret || "";
-    if (authHeader !== `Bearer ${CRON_SECRET}` && bodySecret !== CRON_SECRET) {
-      return res.status(401).json({ error: "Unauthorized" });
-    }
+  // Always require CRON_SECRET — never skip the check, even in dev.
+  if (!CRON_SECRET) return res.status(500).json({ error: "CRON_SECRET not configured" });
+  const authHeader = req.headers["authorization"] || "";
+  if (authHeader !== `Bearer ${CRON_SECRET}`) {
+    return res.status(401).json({ error: "Unauthorized" });
   }
 
   const log = [];
@@ -187,8 +185,8 @@ module.exports = async function handler(req, res) {
     return res.json({ ok: true, log, updated: updatedMatches, graded: gradedPredictions });
 
   } catch (e) {
-    log.push(`ERROR: ${e.message}`);
+    log.push(`ERROR: internal error`);
     console.error("[results-agent]", e);
-    return res.status(500).json({ ok: false, log, error: e.message });
+    return res.status(500).json({ ok: false, log, error: "Internal server error" });
   }
 };

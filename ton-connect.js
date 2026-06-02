@@ -18,8 +18,10 @@
       return;
     }
 
+    // Use the canonical production URL. Update TELEGRAM_APP_ORIGIN env var if the domain changes.
+    const appOrigin = (typeof window !== "undefined" && window.__APP_ORIGIN__) || window.location.origin;
     const ui = new TonConnectUI({
-      manifestUrl: "https://project-cu6be.vercel.app/tonconnect-manifest.json",
+      manifestUrl: `${appOrigin}/tonconnect-manifest.json`,
       // Don't render TonConnect's own button — we drive the UI ourselves
       buttonRootId: null,
     });

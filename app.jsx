@@ -327,10 +327,14 @@ function App() {
       }), 600);
     },
 
-    // Channel verify callback
+    // Channel verify callback — energy is awarded server-side via record_energy.
     verifyChannel: () => {
       setChannelJoined(true);
       setTasksDone(t => ({ ...t, channel: true }));
+      if (window.SupaDB && dbUser) {
+        SupaDB.saveTask(dbUser.id, "channel_join");
+        SupaDB.recordEnergy(dbUser.id, "referral_activated", 50, energy + 50, { notes: "channel_join" });
+      }
       setEnergy(e => Math.min(9999, e + 50));
     },
 

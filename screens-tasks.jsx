@@ -219,8 +219,10 @@ const MiniWheel = () => {
 };
 
 // ─── CASINO MINI-GAME — SPIN WHEEL ────────────────────────
-const SPIN_KEY = "ta_spin_last"; // localStorage key for last spin timestamp
-const SPIN_COOLDOWN_MS = 24 * 60 * 60 * 1000; // 24 hours
+// localStorage provides an optimistic UI cooldown so users don't see the button
+// enabled before the server rejects them. Server-side enforcement is the true gate.
+const SPIN_KEY = "ta_spin_last";
+const SPIN_COOLDOWN_MS = 24 * 60 * 60 * 1000;
 
 function getSpinCooldownMs() {
   const last = parseInt(localStorage.getItem(SPIN_KEY) || "0", 10);

@@ -5,7 +5,7 @@
 const requireAdmin = require("./_auth");
 
 const CORS = {
-  "Access-Control-Allow-Origin":  "*",
+  "Access-Control-Allow-Origin":  process.env.ADMIN_ORIGIN || "*",
   "Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
 };
@@ -76,10 +76,20 @@ module.exports = async function handler(req, res) {
 
     // ── PATCH (update user) ────────────────────────────────
     if (req.method === "PATCH" && section === "users") {
-      const { id: uid, ...fields } = req.body || {};
+      const { id: uid, ...incoming } = req.body || {};
       if (!uid) return res.status(400).json({ error: "id required" });
+
+      // Allowlist editable fields — prevents arbitrary column injection.
+      const ALLOWED_FIELDS = ["display_name", "username", "is_flagged", "flagged_reason"];
+      const fields = Object.fromEntries(
+        Object.entries(incoming).filter(([k]) => ALLOWED_FIELDS.includes(k))
+      );
+      if (!Object.keys(fields).length) {
+        return res.status(400).json({ error: "No valid fields to update" });
+      }
+
       const r = await sb(`/rest/v1/users?id=eq.${uid}`, KEY, "PATCH", fields);
-      if (!r.ok) return res.status(500).json({ error: r.data });
+      if (!r.ok) return res.status(500).json({ error: "Update failed" });
       return res.json({ ok: true });
     }
 
@@ -97,6 +107,6 @@ module.exports = async function handler(req, res) {
     return res.status(405).end();
   } catch (e) {
     console.error("[admin/data]", e);
-    return res.status(500).json({ error: e.message });
+    return res.status(500).json({ error: "Internal server error" });
   }
 };
