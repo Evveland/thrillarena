@@ -44,7 +44,7 @@ const Onboarding = ({ onStart }) => {
         </div>
         {/* Logo centered on top of stadium */}
         <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 20px", position: "relative", zIndex: 2 }}>
-          <img src="/fmf-logo.png" alt="Futbol Mundial Fans Club" style={{
+          <img src="/fmf-logo.jpg" alt="Futbol Mundial Fans Club" style={{
             width: "100%",
             maxWidth: 380,
             height: "auto",
