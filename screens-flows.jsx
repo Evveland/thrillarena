@@ -276,7 +276,7 @@ const ChannelVerifyModal = ({ onClose, onVerified }) => {
             display: "flex", alignItems: "center", justifyContent: "center",
             border: "2px solid rgba(93,237,165,0.4)",
           }}>
-            <ThrillMark size={32} />
+            <div style={{ fontSize: 32 }}>⚽</div>
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 14, fontWeight: 700, display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap" }}>

@@ -26,11 +26,11 @@ const DEFAULT_BOOST = {
 
 // ── Prize-pool state (per Dev Spec §6 — unlock gates) ─────
 // `dailyActions` tracks today's pool unlock progress.
-// Tickets are raffle entries earned via Thrill actions (capped per pool).
+// Tickets are raffle entries earned via actions (capped per pool).
 // One correct prediction = +1 ticket in Daily AND +1 ticket in the round's
 // raffle. So per-pool counts can each climb independently.
 const DEFAULT_POOL_STATE = {
-  dailyActions: { predictions: 0, thrillVisits: 0, thrillTasks: 0 },
+  dailyActions: { predictions: 0, matchVisits: 0, tasksCompleted: 0 },
   dailyTickets:  0,
   groupTickets:  0,
   r32Tickets:    0,
@@ -63,7 +63,7 @@ function App() {
   }, [tweaks.primary, tweaks.accent]);
 
   // Expose pool action recorders globally so deeply-nested links ("Bet on
-  // Thrill" anchors inside bracket match cards) can fire them without
+  // match cards) can fire them without
   // threading actions through every component. Defined further below,
   // after `boost` is in scope — see the useEffect after state setup.
 
@@ -167,20 +167,20 @@ function App() {
   }, [tweaks.startingEnergy, screen]);
 
   // Expose pool action recorders globally so deeply-nested links ("Bet on
-  // Thrill" anchors inside bracket match cards) can fire them without
+  // match cards) can fire them without
   // threading actions through every component.
   React.useEffect(() => {
-    window.__recordThrillVisit = () => {
+    window.__recordMatchVisit = () => {
       const mult = boost.multiplier || 1;
       const ticketsAwarded = 1 * mult;
       setPoolState(ps => ({
         ...ps,
-        dailyActions: { ...ps.dailyActions, thrillVisits: ps.dailyActions.thrillVisits + 1 },
+        dailyActions: { ...ps.dailyActions, matchVisits: ps.dailyActions.matchVisits + 1 },
         dailyTickets: ps.dailyTickets + ticketsAwarded,
-        ticketToast: { tickets: ticketsAwarded, action: "Visited Thrill betting page", _ts: Date.now() },
+        ticketToast: { tickets: ticketsAwarded, action: "Visited match page", _ts: Date.now() },
       }));
     };
-    return () => { delete window.__recordThrillVisit; };
+    return () => { delete window.__recordMatchVisit; };
   }, [boost.multiplier]);
 
   // Helper: push a Telegram-style notification toast
@@ -278,32 +278,32 @@ function App() {
       const amount = m ? +m[1] : 5;
       setTasksDone(t => ({ ...t, [id]: true }));
       setEnergy(e => Math.min(9999, e + amount));
-      actions.recordThrillTaskCompleted();
+      actions.recordTaskCompleted();
     },
 
     // ── Prize-pool action recorders ──────────────────────
-    // Called from prediction confirms, Thrill betting-page visits, and tasks.
+    // Called from prediction confirms, match visits, and tasks.
     // The user's BOOST tier multiplies the base ticket grant — e.g. a $500
     // depositor (100x) gets 100 tickets per action instead of 1.
-    recordThrillVisit: () => {
+    recordMatchVisit: () => {
       const ticketsAwarded = 1 * boost.multiplier;
       setPoolState(ps => ({
         ...ps,
-        dailyActions: { ...ps.dailyActions, thrillVisits: ps.dailyActions.thrillVisits + 1 },
+        dailyActions: { ...ps.dailyActions, matchVisits: ps.dailyActions.matchVisits + 1 },
         dailyTickets: ps.dailyTickets + ticketsAwarded,
-        ticketToast: { tickets: ticketsAwarded, action: "Visited Thrill betting page", _ts: Date.now() },
+        ticketToast: { tickets: ticketsAwarded, action: "Visited match page", _ts: Date.now() },
       }));
     },
-    recordThrillTaskCompleted: () => {
+    recordTaskCompleted: () => {
       const ticketsAwarded = 1 * boost.multiplier;
       setPoolState(ps => ({
         ...ps,
-        dailyActions: { ...ps.dailyActions, thrillTasks: ps.dailyActions.thrillTasks + 1 },
+        dailyActions: { ...ps.dailyActions, tasksCompleted: ps.dailyActions.tasksCompleted + 1 },
         dailyTickets: ps.dailyTickets + ticketsAwarded,
-        ticketToast: { tickets: ticketsAwarded, action: "Completed a Thrill task", _ts: Date.now() },
+        ticketToast: { tickets: ticketsAwarded, action: "Completed a task", _ts: Date.now() },
       }));
       if (window.SupaDB && dbUser) {
-        SupaDB.saveTask(dbUser.id, "thrill_task");
+        SupaDB.saveTask(dbUser.id, "mini_app_task");
       }
     },
     dismissTicketToast: () => setPoolState(ps => ({ ...ps, ticketToast: null })),
@@ -533,7 +533,7 @@ function App() {
         />
       )}
 
-      {/* ── "+1 ticket" toast (Thrill action feedback) ── */}
+      {/* ── "+1 ticket" toast (action feedback) ── */}
       {poolState.ticketToast && (
         <TicketEarnedToast
           key={poolState.ticketToast._ts}
@@ -654,17 +654,17 @@ function App() {
               ...ps,
               dailyActions: { ...ps.dailyActions, predictions: ps.dailyActions.predictions + 1 },
             }))} />
-          <TweakButton label="Fire Thrill visit (+1 ticket)"
-            onClick={() => window.__recordThrillVisit?.()} />
-          <TweakButton label="Fire Thrill task complete (+1 ticket)"
-            onClick={actions.recordThrillTaskCompleted} />
+          <TweakButton label="Fire match visit (+1 ticket)"
+            onClick={() => window.__recordMatchVisit?.()} />
+          <TweakButton label="Fire task complete (+1 ticket)"
+            onClick={actions.recordTaskCompleted} />
           <TweakButton label="Force-unlock daily pool"
             onClick={() => setPoolState(ps => ({
               ...ps,
               dailyActions: {
                 predictions: TODAY_POOL.unlock.minPredictions,
-                thrillVisits: TODAY_POOL.unlock.minThrillVisits,
-                thrillTasks: TODAY_POOL.unlock.minThrillTasks,
+                matchVisits: 0,
+                tasksCompleted: TODAY_POOL.unlock.minTasksCompleted || 0,
               },
               dailyTickets: Math.max(ps.dailyTickets, 6),
             }))} />
