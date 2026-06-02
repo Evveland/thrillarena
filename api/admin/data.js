@@ -71,6 +71,11 @@ module.exports = async function handler(req, res) {
         return res.json(data || {});
       }
 
+      if (section === "fixtures") {
+        const data = await rpc("admin_fixtures", KEY);
+        return res.json(data || { matches: [], count: 0 });
+      }
+
       return res.status(400).json({ error: "Unknown section" });
     }
 

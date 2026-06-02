@@ -177,6 +177,10 @@
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
       Predictions
     </button>
+    <button class="nav-item" onclick="nav('fixtures')" data-section="fixtures">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      Fixtures
+    </button>
     <button class="nav-item" onclick="nav('broadcast')" data-section="broadcast">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2L15 22 11 13 2 9l20-7z"/></svg>
       Broadcast
@@ -292,6 +296,27 @@
             <thead><tr><th>Match</th><th>Total</th><th>Correct</th><th>Pending</th><th>Picks breakdown + Sentiment</th></tr></thead>
             <tbody id="match-sentiment-tbody"></tbody>
           </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── FIXTURES ────────────────────────── -->
+    <div class="section" id="section-fixtures">
+      <div class="topbar"><h2>Fixtures</h2></div>
+      <div class="content">
+        <div class="table-card">
+          <div class="table-toolbar"><h3>Complete fixtures list</h3></div>
+          <table>
+            <thead><tr><th>Stage</th><th>Match</th><th>Teams</th><th>Date</th><th>Status</th><th>Score</th><th>Predictions</th></tr></thead>
+            <tbody id="fixtures-tbody"></tbody>
+          </table>
+          <div class="pagination">
+            <span id="fixtures-count">—</span>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-ghost btn-sm" onclick="fixturesPage(-1)">← Prev</button>
+              <button class="btn btn-ghost btn-sm" onclick="fixturesPage(1)">Next →</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -459,6 +484,7 @@ function nav(section) {
   if (section === "users")       loadUsers();
   if (section === "raffles")     loadRaffles();
   if (section === "predictions") loadPredictions();
+  if (section === "fixtures")    loadFixtures();
 }
 
 // ── Show app ─────────────────────────────────────────────────
@@ -873,6 +899,56 @@ async function loadPredictions() {
         </tr>`;
       }).join("")
     : `<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--muted)">No prediction data yet</td></tr>`;
+}
+
+// ── Fixtures ────────────────────────────────────────────────
+let fixturesData = [];
+let fixturesPage = 0;
+const FIXTURES_PER_PAGE = 50;
+
+async function loadFixtures() {
+  const r = await api("/data?section=fixtures");
+  if (!r.ok) return;
+  const d = await r.json();
+  fixturesData = d.matches || [];
+  fixturesPage = 0;
+  renderFixtures();
+}
+
+function renderFixtures() {
+  const start = fixturesPage * FIXTURES_PER_PAGE;
+  const end = start + FIXTURES_PER_PAGE;
+  const page = fixturesData.slice(start, end);
+
+  document.getElementById("fixtures-count").textContent = `${start + 1}–${Math.min(end, fixturesData.length)} of ${fixturesData.length} matches`;
+
+  document.getElementById("fixtures-tbody").innerHTML = page.length
+    ? page.map(m => {
+        const dateStr = m.date ? new Date(m.date + "T00:00:00Z").toLocaleDateString("en-US", {month:"short", day:"2-digit"}) : "TBD";
+        const stageLabel = {groups:"Groups", r32:"R32", r16:"R16", qf:"QF", sf:"SF", third:"3rd", final:"Final"}[m.stage] || m.stage;
+        const statusBadge = {pending:"badge-gray", locked:"badge-orange", graded:"badge-green"}[m.status] || "badge-blue";
+        const scoreStr = m.home_score !== null && m.away_score !== null ? `${m.home_score}-${m.away_score}` : "—";
+        const total = (m.total_predictions || 0);
+        return `<tr>
+          <td><span class="badge" style="background:rgba(93,237,165,0.15);color:#5deda5">${stageLabel}</span></td>
+          <td style="font-size:12px">${m.id}</td>
+          <td style="font-weight:500;font-size:13px">${m.home_team} vs ${m.away_team}</td>
+          <td style="color:var(--muted);font-size:12px">${dateStr}</td>
+          <td><span class="badge ${statusBadge}">${m.status}</span></td>
+          <td style="text-align:center;font-weight:600">${scoreStr}</td>
+          <td style="text-align:center;color:var(--muted)">${total}</td>
+        </tr>`;
+      }).join("")
+    : `<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--muted)">No fixtures data</td></tr>`;
+}
+
+function fixturesPage(delta) {
+  const maxPage = Math.ceil(fixturesData.length / FIXTURES_PER_PAGE) - 1;
+  const newPage = Math.max(0, Math.min(maxPage, fixturesPage + delta));
+  if (newPage !== fixturesPage) {
+    fixturesPage = newPage;
+    renderFixtures();
+  }
 }
 
 // ── Broadcast ────────────────────────────────────────────────

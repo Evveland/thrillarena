@@ -23,27 +23,39 @@ const Onboarding = ({ onStart }) => {
   ];
   const s = slides[step];
 
-  // Slide 1 uses a special full-bleed splash layout
+  // Slide 1 uses a special splash layout
   if (step === 0) {
     return (
       <div style={{ position: "absolute", inset: 0, zIndex: 200, display: "flex", flexDirection: "column" }}>
-        {/* Full-bleed background image */}
-        <img src="/splash.png" alt="Futbol Mundial Fans" style={{
+        {/* Stadium background */}
+        <img src="/stadium-bg.png" alt="" style={{
           position: "absolute", inset: 0, width: "100%", height: "100%",
-          objectFit: "cover", objectPosition: "center top",
+          objectFit: "cover", objectPosition: "center center",
+        }} />
+        {/* Gradient scrim — fade to dark at bottom for text readability */}
+        <div style={{
+          position: "absolute", inset: 0,
+          background: "linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.05) 35%, rgba(10,14,28,0.75) 68%, #0A0E1C 100%)",
         }} />
         {/* Skip button */}
         <div style={{ position: "relative", zIndex: 2, display: "flex", justifyContent: "flex-end", padding: "20px 24px 0" }}>
           <button className="btn" style={{ color: "rgba(255,255,255,0.6)", fontSize: 13, fontWeight: 600, letterSpacing: "0.06em", background: "rgba(0,0,0,0.3)", borderRadius: 8, padding: "6px 12px" }}
             onClick={onStart}>SKIP →</button>
         </div>
-        {/* Spacer */}
-        <div style={{ flex: 1 }} />
-        {/* Text + CTA overlay — gradient scrim from bottom */}
+        {/* Logo centered on top of stadium */}
+        <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 20px", position: "relative", zIndex: 2 }}>
+          <img src="/fmf-logo.png" alt="Futbol Mundial Fans Club" style={{
+            width: "100%",
+            maxWidth: 380,
+            height: "auto",
+            objectFit: "contain",
+          }} />
+        </div>
+        {/* Text + CTA */}
         <div style={{
           position: "relative", zIndex: 2,
-          background: "linear-gradient(to top, #0A0E1C 55%, rgba(10,14,28,0.85) 75%, transparent 100%)",
-          padding: "40px 28px 36px",
+          background: "linear-gradient(to top, #0A0E1C 60%, rgba(10,14,28,0.9) 80%, transparent 100%)",
+          padding: "32px 28px 36px",
         }}>
           <div className="eyebrow" style={{ color: "var(--orange)", marginBottom: 12 }}>{s.eyebrow}</div>
           <div className="h-big" style={{ marginBottom: 14, whiteSpace: "pre-line", fontSize: 44, lineHeight: 0.95 }}>{s.title}</div>
