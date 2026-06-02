@@ -215,11 +215,6 @@ function App() {
 
     // Gate → "Boost then pick": open deposit modal; on success the deposit
     // modal's onClose handler (in App render below) forwards to the predict
-    // modal because `pendingPredictMatchId` is set.
-    chooseBoostThenPick: (matchId, amount) => {
-      setPendingPredictMatchId(matchId);
-      setModal({ type: "deposit", presetAmount: amount });
-    },
     confirmPick: (matchId, teamCode, cost, confidence = 60) => {
       const wasNew = !predictions[matchId];
       // ── Confidence → base ticket tiers (needed outside if block) ──
@@ -399,7 +394,6 @@ function App() {
 
     // ── Boost / deposit actions ─────────────────────
     openBoostHub: () => setModal({ type: "boost-hub" }),
-    openDeposit: (presetAmount = null) => setModal({ type: "deposit", presetAmount }),
 
     makeDeposit: ({ currency, cryptoAmount, usdAmount }) => {
       const newTotal = boost.lifetimeDeposited + usdAmount;
@@ -606,24 +600,6 @@ function App() {
           onClose={() => setModal(null)}
         />
       )}
-      {modal?.type === "deposit" && (
-        <DepositModal
-          state={state} actions={actions}
-          presetAmount={modal.presetAmount}
-          onClose={() => {
-            // If a match was waiting to be predicted after this deposit
-            // (boost-first flow), forward to the predict modal instead of
-            // dismissing the user back to the bracket.
-            if (pendingPredictMatchId) {
-              const matchId = pendingPredictMatchId;
-              setPendingPredictMatchId(null);
-              setModal({ type: "predict", matchId });
-            } else {
-              setModal(null);
-            }
-          }}
-        />
-      )}
       {modal?.type === "boost-gate" && (
         <BoostGate
           matchId={modal.matchId}
@@ -702,10 +678,6 @@ function App() {
             onChange={v => setTweak("boostFirstFlow", v)} />
           <TweakButton label="Open Boost Hub"
             onClick={() => setModal({ type: "boost-hub" })} />
-          <TweakButton label="Quick deposit $20"
-            onClick={() => setModal({ type: "deposit", presetAmount: 20 })} />
-          <TweakButton label="Quick deposit $500 (max)"
-            onClick={() => setModal({ type: "deposit", presetAmount: 500 })} />
           <TweakButton label={`Advance stage → ${STAGES[Math.min(STAGES.length-1, boost.currentStageIdx+1)]?.short || "Final"}`}
             onClick={actions.advanceStage} />
           <TweakButton label="Rewind stage"
