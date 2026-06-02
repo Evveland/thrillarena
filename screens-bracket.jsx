@@ -514,30 +514,6 @@ const MatchCard = ({ match, pick, onPredict, index, dense }) => {
           : (isPicked ? "Change pick" : "Predict winner →")}
       </button>
 
-      {/* External bet link — only show when matchup is known */}
-      {teamsResolved && !isTBD && (
-        <a
-          href={matchBettingURL(match)}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={e => { e.stopPropagation(); window.__recordThrillVisit?.(); }}
-          style={{
-            marginTop: 6,
-            width: "100%", height: 32, borderRadius: 10,
-            display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-            background: "linear-gradient(135deg, rgba(255,159,28,0.14), rgba(255,77,103,0.10))",
-            border: "1px solid rgba(255,159,28,0.3)",
-            color: "var(--orange)",
-            fontFamily: "var(--display)", fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase",
-            textDecoration: "none",
-          }}>
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M3 12c2 4 5 7 9 7s7-3 9-7c-2-4-5-7-9-7s-7 3-9 7z" />
-            <circle cx="12" cy="12" r="2" fill="currentColor" />
-          </svg>
-          Bet on Thrill <Icon name="arrow" size={11} stroke={2.5} />
-        </a>
-      )}
     </div>
   );
 };
@@ -789,29 +765,6 @@ const PredictModal = ({ matchId, state, actions, onClose }) => {
             : "Pick a team"}
         </button>
 
-        {/* External Thrill betting CTA */}
-        {home.resolved && away.resolved && (
-          <a
-            href={matchBettingURL(match)}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={() => window.__recordThrillVisit?.()}
-            style={{
-              marginTop: 10, width: "100%", height: 48, borderRadius: 14,
-              display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-              background: "linear-gradient(135deg, rgba(255,159,28,0.18), rgba(255,77,103,0.12))",
-              border: "1px solid rgba(255,159,28,0.35)",
-              color: "var(--orange)",
-              fontFamily: "var(--display)", fontSize: 14, letterSpacing: "0.08em", textTransform: "uppercase",
-              textDecoration: "none",
-            }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M3 12c2 4 5 7 9 7s7-3 9-7c-2-4-5-7-9-7s-7 3-9 7z" />
-              <circle cx="12" cy="12" r="2" fill="currentColor" />
-            </svg>
-            Place a real bet on Thrill <Icon name="arrow" size={14} stroke={2.5} />
-          </a>
-        )}
 
       </div>
     </div>
@@ -952,28 +905,6 @@ const PickResultModal = ({ teamCode, matchId, confidence, effectiveTickets, free
           </div>
         ) : null}
 
-        {/* Boost upsell for unboosted users */}
-        {(state?.boost?.multiplier || 1) <= 1 && tix < 3 && (
-          <a href="https://thrill.com" target="_blank" rel="noopener noreferrer"
-            style={{
-              display: "flex", alignItems: "center", gap: 10,
-              width: "calc(100% - 8px)", marginBottom: 8, padding: "12px 16px",
-              background: "rgba(255,77,103,0.08)", border: "1px solid rgba(255,77,103,0.3)",
-              borderRadius: 14, textDecoration: "none",
-            }}>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: "#FF4D67", marginBottom: 2 }}>
-                Boost would have earned {tix * 5}× more tickets
-              </div>
-              <div style={{ fontSize: 11, color: "var(--text-faint)" }}>
-                A $20 deposit turns {tix} ticket{tix !== 1 ? "s" : ""} → {tix * 5} tickets per correct pick
-              </div>
-            </div>
-            <span style={{ fontSize: 11, color: "#FF4D67", fontWeight: 700, whiteSpace: "nowrap" }}>
-              Deposit →
-            </span>
-          </a>
-        )}
 
         <button className="btn btn-primary" onClick={onClose} style={{ width: "calc(100% - 8px)" }}>Done</button>
       </div>

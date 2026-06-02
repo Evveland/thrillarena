@@ -157,7 +157,7 @@ const BoostHubScreen = ({ state, actions, onClose }) => {
           }}>x</div>
         </div>
         <div style={{ fontSize: 12, color: "var(--text-dim)", marginTop: 6, lineHeight: 1.5, maxWidth: 300, margin: "6px auto 0" }}>
-          Every correct pick and every Thrill action drops{" "}
+          Every correct pick and completed task drops{" "}
           <b style={{ color: tier.color, fontFamily: "var(--display)" }} className="num">{multiplier}</b>{" "}
           ticket{multiplier === 1 ? "" : "s"} into the matching raffle pool.
         </div>
@@ -251,42 +251,6 @@ const BoostHubScreen = ({ state, actions, onClose }) => {
         </div>
       </div>
 
-      {/* Quick deposit CTAs */}
-      <div style={{ padding: "0 20px 16px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 10 }}>
-          <div className="eyebrow">Top up boost</div>
-          <div style={{ fontSize: 10, color: "var(--text-faint)", letterSpacing: "0.06em" }}>
-            via Thrill Casino
-          </div>
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 6, marginBottom: 10 }}>
-          {QUICK_DEPOSIT_AMOUNTS.map(amt => {
-            const tierAt = boostTierFor(lifetimeDeposited + amt);
-            const willBe = tierAt.mult;
-            const isLeap = tierAt.mult > tier.mult;
-            return (
-              <button key={amt} className="btn" onClick={() => actions.openDeposit(amt)} style={{
-                padding: "10px 4px",
-                background: isLeap ? `linear-gradient(180deg, ${tierAt.color}22, transparent)` : "var(--card)",
-                border: `1px solid ${isLeap ? `${tierAt.color}55` : "var(--line-soft)"}`,
-                borderRadius: 12,
-                textAlign: "center",
-              }}>
-                <div className="num" style={{ fontFamily: "var(--display)", fontSize: 16, color: isLeap ? tierAt.color : "var(--text)" }}>
-                  ${amt}
-                </div>
-                <div className="num" style={{ fontSize: 10, color: "var(--text-faint)", marginTop: 2 }}>
-                  → {fmtMult(willBe)}
-                </div>
-              </button>
-            );
-          })}
-        </div>
-
-        <button className="btn btn-primary" onClick={() => actions.openDeposit(null)}>
-          Custom amount →
-        </button>
-      </div>
 
       {/* History */}
       {deposits.length > 0 && (

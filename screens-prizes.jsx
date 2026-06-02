@@ -523,8 +523,8 @@ const PoolRow = ({ pool, open, onToggle, state, prog, actions }) => {
               borderRadius: 10, fontSize: 11, color: "var(--text-dim)", lineHeight: 1.4,
               display: "flex", alignItems: "center", gap: 8,
             }}>
-              <span style={{ color: "#FF4D67", fontWeight: 700 }}>Deposit on Thrill →</span>
-              <span>multiply every ticket up to ×100</span>
+              <span style={{ color: "#FF4D67", fontWeight: 700 }}>View boost →</span>
+              <span>see your current multiplier</span>
             </button>
           )}
 
@@ -536,7 +536,7 @@ const PoolRow = ({ pool, open, onToggle, state, prog, actions }) => {
             {pool.key === "r16"   && <><b style={{ color: pool.color }}>Fewer fixtures, bigger prizes.</b> Round of 16 correct picks earn tickets. $200 per fixture, 5 winners each.</>}
             {pool.key === "qf"    && <><b style={{ color: pool.color }}>Final 8.</b> 4 quarterfinal fixtures, $300 each, 5 winners per fixture.</>}
             {pool.key === "sf"    && <><b style={{ color: pool.color }}>Two matches, ten winners.</b> $400 per semifinal, 5 winners each, drawn after both semis complete.</>}
-            {pool.key === "final" && <><b style={{ color: pool.color }}>The hero prize.</b> 5 raffle winners draw $1,000 each on Jul 19. Deposit on Thrill to multiply your ticket count up to ×100.</>}
+            {pool.key === "final" && <><b style={{ color: pool.color }}>The hero prize.</b> 5 raffle winners draw $1,000 each on Jul 19. Every correct pick earns raffle tickets toward the draw.</>}
           </div>
 
           {/* Matches in this pool — wired to schedule data */}

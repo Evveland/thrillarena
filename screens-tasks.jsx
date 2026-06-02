@@ -560,6 +560,4 @@ const OutOfEnergyModal = ({ state, actions, onClose }) => {
   );
 };
 
-// ─── THRILL REGISTER MODAL ───────────────────────────────
-
-Object.assign(window, { TasksScreen, CasinoScreen, OutOfEnergyModal, ThrillRegisterModal });
+Object.assign(window, { TasksScreen, CasinoScreen, OutOfEnergyModal });

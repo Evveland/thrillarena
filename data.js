@@ -144,5 +144,5 @@ Object.assign(window, {
   BOOST_TIERS, QUICK_DEPOSIT_AMOUNTS, BOOST_DECAY_RATE, DEPOSIT_CURRENCIES,
   boostTierFor, currentMultiplier, rankCapForMult, fmtMult,
   SCORING, projectReward, teamOrSlot, fmtDate,
-  thrillBettingURL, matchBettingURL,
+  matchBettingURL,
 });
