@@ -34,27 +34,9 @@ const Icon = ({ name, size = 22, color = "currentColor", stroke = 2 }) => {
   );
 };
 
-// ─── Thrill logo mark ─────────────────────────────────────
-const ThrillMark = ({ size = 48 }) => (
-  <svg width={size} height={size} viewBox="0 0 64 64" fill="none">
-    <circle cx="32" cy="32" r="30" fill="#5DEDA5" />
-    <path d="M32 12 C24 24 18 30 18 38 a5 5 0 0 0 9 3.5 L25.5 48 h13 l-1.5 -6.5 a5 5 0 0 0 9 -3.5 c0-8-6-14-14-26z"
-      fill="#0A0E1C"/>
-  </svg>
-);
 
-// ─── Thrill wordmark ──────────────────────────────────────
-const ThrillWordmark = ({ size = 48, color = "#FFFFFF" }) => (
-  <div style={{
-    fontFamily: "var(--display)",
-    fontSize: size,
-    lineHeight: 0.9,
-    letterSpacing: "-0.02em",
-    color,
-    fontStretch: "condensed",
-    textTransform: "lowercase",
-  }}>thrill</div>
-);
+
+
 
 // ─── Trophy logo mark ─────────────────────────────────────
 const TrophyLogo = ({ size = 64 }) => (
@@ -149,5 +131,5 @@ const ScreenHeader = ({ title, eyebrow, right }) => (
 
 Object.assign(window, {
   Icon, TrophyLogo, BoltIcon, TokenCoin, FlagBadge, StatusPills, ScreenHeader,
-  ThrillMark, ThrillWordmark,
+  
 });

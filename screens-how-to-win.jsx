@@ -47,7 +47,7 @@ const HowToWinModal = ({ onClose }) => (
           { icon: <Icon name="people" size={14} color="#FF9F1C" />, bg: "rgba(255,159,28,0.12)", border: "rgba(255,159,28,0.35)",
             label: "Invite a friend", sub: "They join → you earn", value: "+30 ⚡", valueColor: "var(--orange)" },
           { icon: <BoltIcon size={14} color="#FF9F1C" />, bg: "rgba(255,159,28,0.08)", border: "rgba(255,159,28,0.2)",
-            label: "Register on Thrill", sub: "One-time bonus", value: "+30 ⚡", valueColor: "var(--orange)" },
+            label: "Complete challenges", sub: "One-time bonus", value: "+30 ⚡", valueColor: "var(--orange)" },
           { icon: <Icon name="telegram" size={14} color="#22D3EE" />, bg: "rgba(34,211,238,0.1)", border: "rgba(34,211,238,0.25)",
             label: "Join channel + connect wallet", sub: "+10 ⚡ each · one-time", value: "+20 ⚡", valueColor: "#22D3EE" },
           { icon: <Icon name="wheel" size={14} color="#FFD60A" />, bg: "rgba(255,214,10,0.1)", border: "rgba(255,214,10,0.25)",
@@ -120,7 +120,7 @@ const HowToWinModal = ({ onClose }) => (
       }}>
         <div className="eyebrow" style={{ color: "#FF4D67", marginBottom: 8 }}>4 · Deposits multiply every ticket</div>
         <div style={{ fontSize: 12, color: "var(--text-dim)", lineHeight: 1.55, marginBottom: 10 }}>
-          Deposit on Thrill Casino to unlock a multiplier that applies to <b style={{ color: "var(--text)" }}>every correct prediction</b> for the rest of the campaign.
+          Unlock a multiplier that applies to <b style={{ color: "var(--text)" }}>every correct prediction</b> for the rest of the campaign.
         </div>
         <div style={{ background: "rgba(0,0,0,0.25)", borderRadius: 10, overflow: "hidden", border: "1px solid var(--line-soft)" }}>
           {BOOST_TIERS.filter(t => t.min > 0).map((t, i, arr) => (

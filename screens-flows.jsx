@@ -249,7 +249,7 @@ const ChannelVerifyModal = ({ onClose, onVerified }) => {
             </div>
             <div style={{ minWidth: 0 }}>
               <div className="eyebrow" style={{ color: "#2AABEE" }}>Telegram</div>
-              <div style={{ fontSize: 15, fontWeight: 700, marginTop: 2 }}>Join @thrill_arena</div>
+              <div style={{ fontSize: 15, fontWeight: 700, marginTop: 2 }}>Join @futbolmundialfans</div>
             </div>
           </div>
           <button className="btn" onClick={onClose} style={{
@@ -280,7 +280,7 @@ const ChannelVerifyModal = ({ onClose, onVerified }) => {
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 14, fontWeight: 700, display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap" }}>
-              Thrill Arena
+              Futbol Mundial Fans
               <svg width="14" height="14" viewBox="0 0 24 24" fill="#2AABEE" style={{ flexShrink: 0 }}>
                 <path d="M12 2L9 5 4 4l1 5-3 3 3 3-1 5 5-1 3 3 3-3 5 1-1-5 3-3-3-3 1-5-5 1z" />
                 <path d="M8 12l3 3 5-5" stroke="#fff" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
@@ -433,8 +433,8 @@ const InviteShareModal = ({ onClose, onSent }) => {
   const refCode   = getReferralCode();
   // ?startapp= puts the value in initDataUnsafe.start_param for mini apps
   // ?start= only passes to the bot's /start command — doesn't reach the mini app
-  const inviteUrl = `https://t.me/thrillarena_bot?startapp=${refCode}`;
-  const shareText = encodeURIComponent("⚽ Join me on Thrill Arena — predict WC 2026 matches and win from a $20,000 USDT prize pool!");
+  const inviteUrl = `https://t.me?startapp=${refCode}`;
+  const shareText = encodeURIComponent("⚽ Join me on Futbol Mundial Fans — predict WC 2026 matches and win from a $20,000 USDT prize pool!");
   const shareUrl  = `https://t.me/share/url?url=${encodeURIComponent(inviteUrl)}&text=${shareText}`;
 
   const copy = () => {
@@ -464,7 +464,7 @@ const InviteShareModal = ({ onClose, onSent }) => {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20, gap: 12 }}>
           <div>
             <div className="eyebrow" style={{ color: "var(--orange)", marginBottom: 8 }}>Bring friends</div>
-            <div className="h-lg">Invite to Thrill Arena</div>
+            <div className="h-lg">Invite to Futbol Mundial Fans</div>
           </div>
           <button className="btn" onClick={onClose} style={{
             width: 36, height: 36, borderRadius: 999, flexShrink: 0,
@@ -594,7 +594,7 @@ const NotifyOptInModal = ({ onClose, onEnable, prefs }) => {
         </div>
 
         <div style={{ fontSize: 13, color: "var(--text-dim)", lineHeight: 1.5, marginBottom: 16 }}>
-          We'll DM you from <b style={{ color: "var(--text)" }}>@thrill_arena_bot</b>. You can turn each off any time.
+          We'll DM you from <b style={{ color: "var(--text)" }}>@futbolmundialfans_bot</b>. You can turn each off any time.
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 18 }}>

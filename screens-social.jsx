@@ -757,18 +757,7 @@ const ProfileScreen = ({ state, actions }) => {
               </span>
               <span style={{ fontSize: 9, letterSpacing: "0.08em", color: "var(--text-faint)" }}>TON</span>
             </div>
-            <a
-              href="https://thrill.com/deposit"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn btn-primary"
-              style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, textDecoration: "none", width: "100%" }}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 2 L4 14 H10 L9 22 L20 9 H13 L15 2 Z" fill="currentColor" strokeWidth="0"/>
-              </svg>
-              Deposit on Thrill — multiply your tickets
-            </a>
+
           </div>
         ) : (
           // ── NOT CONNECTED — call to action ──
@@ -827,7 +816,7 @@ const ProfileScreen = ({ state, actions }) => {
           <AccountRow
             icon="telegram" iconColor="#2AABEE"
             title="Telegram channel"
-            sub={channelJoined ? "✓ Joined @thrill_arena" : "Not joined — verify to earn ⚡20"}
+            sub={channelJoined ? "✓ Joined @futbolmundialfans" : "Not joined — verify to earn ⚡20"}
             status={channelJoined ? "on" : "off"}
             onClick={() => !channelJoined && actions.doTask("channel")}
             border={false}

@@ -11,7 +11,7 @@ const Onboarding = ({ onStart }) => {
     {
       eyebrow: "Energy → Picks",
       title: "Invite friends,\nkeep predicting.",
-      body: "Picks cost 10–20⚡ depending on your confidence level. You start with 20⚡. Invite friends for +30⚡ each, or register on Thrill for a one-time +30⚡ bonus.",
+      body: "Picks cost 10–20⚡ depending on your confidence level. You start with 20⚡. Invite friends for +30⚡ each and keep earning.",
       art: "bolt",
     },
     {
@@ -28,7 +28,7 @@ const Onboarding = ({ onStart }) => {
     return (
       <div style={{ position: "absolute", inset: 0, zIndex: 200, display: "flex", flexDirection: "column" }}>
         {/* Full-bleed background image */}
-        <img src="/splash.png" alt="Thrill Arena" style={{
+        <img src="/splash.png" alt="Futbol Mundial Fans" style={{
           position: "absolute", inset: 0, width: "100%", height: "100%",
           objectFit: "cover", objectPosition: "center top",
         }} />
@@ -62,7 +62,7 @@ const Onboarding = ({ onStart }) => {
             Continue →
           </button>
           <div style={{ marginTop: 14, textAlign: "center", fontSize: 11, color: "rgba(255,255,255,0.35)", letterSpacing: "0.06em" }}>
-            Powered by <span style={{ color: "var(--teal)", fontWeight: 700 }}>Thrill.com</span>
+            Futbol Mundial Fans
           </div>
         </div>
       </div>
@@ -90,7 +90,7 @@ const Onboarding = ({ onStart }) => {
         {s.art === "logo" && (
           <img
             src="/splash.png"
-            alt="Thrill Arena"
+            alt="Futbol Mundial Fans"
             style={{
               width: "100%",
               height: "100%",
@@ -170,7 +170,7 @@ const Onboarding = ({ onStart }) => {
           {step < slides.length - 1 ? "Continue" : "Enter the Arena"} →
         </button>
         <div style={{ marginTop: 14, textAlign: "center", fontSize: 11, color: "var(--text-faint)", letterSpacing: "0.06em" }}>
-          Powered by <span style={{ color: "var(--teal)", fontWeight: 700 }}>Thrill.com</span>
+          Futbol Mundial Fans
         </div>
       </div>
     </div>
@@ -432,7 +432,7 @@ const ProjectionCard = ({ rank, score, userMult = 1, onView, onBoost, onHowToWin
               <div style={{ fontFamily: "var(--display)", fontSize: 22, color: accent, opacity: 0.7 }}>x</div>
             </div>
             <div style={{ fontSize: 12, color: "var(--text-dim)", marginTop: 6, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-              <b style={{ color: "var(--text)" }} className="num">{userMult}</b> ticket{userMult === 1 ? "" : "s"} per correct pick · per Thrill action
+              <b style={{ color: "var(--text)" }} className="num">{userMult}</b> ticket{userMult === 1 ? "" : "s"} per correct pick · per action completed
             </div>
           </div>
 

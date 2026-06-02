@@ -16,8 +16,7 @@ const ALL_MATCHES = [...groupMatches, ...R32, ...R16, ...QF, ...SF, ...THIRD, ..
 const TASKS = [
   { id: "spin",             title: "Daily Spin",             sub: "Spin to earn up to ⚡50",         reward: "1–50 ⚡",    cooldown: "Ready", type: "spin",             primary: true, icon: "wheel"    },
   { id: "invite",           title: "Invite a friend",        sub: "0 of 5 invited",                  reward: "+30 ⚡ each",cooldown: "Open",  type: "invite",                         icon: "people"   },
-  { id: "thrill_register",  title: "Register on Thrill",     sub: "Create your free casino account", reward: "+30 ⚡",     cooldown: "Once",  type: "thrill_register",                icon: "bolt"     },
-  { id: "channel",          title: "Join Telegram channel",  sub: "@thrill_arena",                   reward: "+10 ⚡",     cooldown: "Once",  type: "channel",                        icon: "telegram" },
+  { id: "channel",          title: "Join Telegram channel",  sub: "@futbolmundialfans",              reward: "+10 ⚡",     cooldown: "Once",  type: "channel",                        icon: "telegram" },
   { id: "wallet",           title: "Connect TON wallet",     sub: "Required for USDT payout",        reward: "+10 ⚡",     cooldown: "Once",  type: "wallet",                         icon: "wallet"   },
 ];
 
@@ -135,25 +134,8 @@ function fmtDate(iso) {
   return d.toLocaleDateString("en", { month: "short", day: "2-digit", timeZone: "UTC" }).toUpperCase();
 }
 
-// Helpers: build a Thrill match-betting URL from two team short codes.
-// Slug pattern: thrill.com/sports/soccer/international/world-cup/{home-slug}-{away-slug}
-// The actual Thrill URLs include a long match ID at the end — to use them,
-// set the `bet` field on a match in data-matches.js / data-knockout.js with the full URL.
-function thrillBettingURL(homeCode, awayCode) {
-  const h = TEAMS[homeCode];
-  const a = TEAMS[awayCode];
-  if (!h || !a) return "https://thrill.com/sports/soccer/international/world-cup";
-  const slug = (s) => s.toLowerCase()
-    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-  return `https://thrill.com/sports/soccer/international/world-cup/${slug(h.name)}-${slug(a.name)}`;
-}
-
-function matchBettingURL(match) {
-  if (match.bet) return match.bet;
-  if (typeof match.home !== "string" || typeof match.away !== "string") return null;
-  if (!TEAMS[match.home] || !TEAMS[match.away]) return null;
-  return thrillBettingURL(match.home, match.away);
+function matchBettingURL() {
+  return null;
 }
 
 Object.assign(window, {

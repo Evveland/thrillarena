@@ -271,7 +271,7 @@ function App() {
       if (task.type === "channel")          return setModal({ type: "channel" });
       if (task.type === "invite")           return setModal({ type: "invite" });
       if (task.type === "spin")             return setModal({ type: "casino" });
-      if (task.type === "thrill_register")  return setModal({ type: "thrill-register" });
+      
 
       // Default: instant reward
       const m = task.reward.match(/(\d+)/);
@@ -637,22 +637,7 @@ function App() {
       {modal?.type === "out-of-energy" && (
         <OutOfEnergyModal state={state} actions={actions} onClose={() => setModal(null)} />
       )}
-      {modal?.type === "thrill-register" && (
-        <ThrillRegisterModal
-          done={tasksDone["thrill_register"]}
-          onClose={() => setModal(null)}
-          onClaim={() => {
-            setTasksDone(t => ({ ...t, thrill_register: true }));
-            setEnergy(e => Math.min(9999, e + 30));
-            if (window.SupaDB && dbUser) {
-              SupaDB.saveTask(dbUser.id, "thrill_registration");
-              SupaDB.recordEnergy(dbUser.id, "referral_activated", 30, energy + 30, { notes: "thrill_register" });
-            }
-            setModal(null);
-            pushNotification({ title: "Registered on Thrill · +30 ⚡", body: "3 more predictions unlocked. Good luck!", kind: "boost" });
-          }}
-        />
-      )}
+
 
       {/* Tweaks panel (always rendered — manages its own open state via host protocol) */}
       <TweaksPanel>

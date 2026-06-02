@@ -2,7 +2,7 @@
 // Total campaign budget: $20,000 USDT — every pool is a ticket-based raffle.
 //
 // HOW WINNING WORKS — TICKETS, NOT POINTS
-//   Users earn TICKETS by acting in the mini-app and on Thrill (predictions,
+//   Users earn TICKETS by making correct predictions (predictions,
 //   visits, tasks, registration, deposits). Each pool draws winners by raffle
 //   weighted by tickets. Boosts MULTIPLY the tickets you earn (2x → 100x).
 //
@@ -171,8 +171,8 @@ const TODAY_POOL = {
   winnersTotal: 5,
   unlock: {
     minPredictions: 3,
-    minThrillVisits: 1,
-    minThrillTasks: 1,
+    minChallengesCompleted: 1,
+    minTasksCompleted: 1,
   },
   // Pre-launch state — no draws yet. First winners announced Jun 12.
   yesterday: {
@@ -194,16 +194,12 @@ const TOTAL_WINNERS = POOL_LAYERS.reduce(
 // settles to +1 ticket — but that ticket counts toward TWO pools at
 // once: the Daily raffle for that game day AND the round's raffle
 // (group / r32 / r16 / qf / sf / final). Group-outcome picks add 3
-// tickets to the Group pool. Thrill registration adds tickets to Daily
+// tickets to the Group pool. Task completion adds tickets to Daily
 // and the Final mega-pool. First deposit unlocks the VIP slot in the Final.
 const TICKET_RULES = [
   { action: "Make a prediction",          xp: 10,   tickets: 0,  pools: [],                  note: "Counts toward daily unlock" },
   { action: "Correct match prediction",   xp: 50,   tickets: 1,  pools: ["daily", "{stage}"],note: "+1 to Daily AND the round's raffle" },
   { action: "Correct group outcome",      xp: 150,  tickets: 3,  pools: ["group"],           note: "Predict who advances from a group" },
-  { action: "Visit Thrill betting page",  xp: 25,   tickets: 0,  pools: [],                  note: "Counts toward daily unlock" },
-  { action: "Complete a Thrill task",     xp: 100,  tickets: 1,  pools: ["daily"],           note: "Bonus daily raffle entry" },
-  { action: "Register on Thrill",         xp: 500,  tickets: 5,  pools: ["daily", "final"],  note: "Validated postback" },
-  { action: "First deposit on Thrill",    xp: 1500, tickets: 15, pools: ["final"],           note: "Unlocks VIP slot in Final" },
 ];
 
 const TICKET_CAPS = {
